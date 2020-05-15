@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+service BlockchainService {
+    rpc Ping (PingMsg) returns (PongMsg) {}
+    rpc advertiseSelf (AddressAdvertisement) returns (AddressConfirmation) {}
+}
+
+message PingMsg { string msg = 1; }
+message PongMsg { string msg = 1; }
+
+message AddressAdvertisement { string address = 1; }
+message AddressConfirmation { bool success = 1; }
