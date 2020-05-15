@@ -7,5 +7,5 @@ fi
 for i in $(eval echo {1..$2})
 do
   port=$(expr $i + $PORT)
-  python main.py client -p $PORT
+  python main.py client -p $PORT&
 done

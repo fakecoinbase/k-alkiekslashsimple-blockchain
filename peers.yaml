@@ -1,0 +1,15 @@
+peers:
+  - name: 'khaled'
+    ip: localhost
+    start_port: 9980
+    count: 4
+
+#  - name: 'hostname'
+#    ip: 255.255.255.255
+#    start_port: 9980
+#    count: 5
+#
+#  - name: 'hostname'
+#    ip: 255.255.255.255
+#    start_port: 9980
+#    count: 5

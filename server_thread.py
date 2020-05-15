@@ -10,18 +10,22 @@ from blockchain_pb2 import PongMsg, PingMsg
 
 class ServerThread(Thread):
 
-    def __init__(self, port, max_workers=10):
+    def __init__(self, port, cond, max_workers=10):
         super().__init__()
+        self.cond = cond
         self.server = grpc.server(ThreadPoolExecutor(max_workers=max_workers))
         blockchain_pb2_grpc.add_BlockchainServiceServicer_to_server(BlockchainServicer(), self.server)
         self.server.add_insecure_port('localhost:' + str(port))
 
     def run(self):
         self.server.start()
-        try:
-            while True:
-                time.sleep(60 * 60 * 24)
-        except KeyboardInterrupt:
-            self.server.stop(0)
-        # finally:
-        #     raise KeyboardInterrupt
+        with self.cond:
+            self.cond.wait()
+        print("================== Stopping server gracefuly ====================")
+        self.server.stop(0)
+        # try:
+        #     while True:
+        #         time.sleep(60 * 60 * 24)
+        # except KeyboardInterrupt:
+        #     print("================== Stopping Server ====================")
+        #     self.server.stop(0)
