@@ -15,6 +15,7 @@ class ServerRequestDispatcher(threading.Thread):
         while True:
             request = self.queue.get()
             with request.condition:
+                # TODO: Invoke some handler for the request
                 print('[%s]: %s' % (request.client, request.message))
                 request.response = "echo back from %s: %s" % (self.server_address, request.message)
                 request.condition.notify()

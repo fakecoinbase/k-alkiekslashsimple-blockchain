@@ -59,6 +59,7 @@ if __name__ == '__main__':
     server_dispatcher = ServerRequestDispatcher(server_queue, server_address())
     server_dispatcher.start()
 
+    # TODO: replace this code with client logic
     i = 0
     while True:
         for peer in peers:
