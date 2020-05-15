@@ -3,7 +3,6 @@ import socket
 import threading
 from queue import Queue
 from time import sleep
-
 import requests
 import yaml
 
@@ -12,7 +11,7 @@ from server.server_thread import ServerThread
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='Simple blockchain client-serverssd')
+    parser = argparse.ArgumentParser(description='Simple blockchain client-server')
     parser.add_argument('mode', type=str, choices=['miner', 'client'], default='miner',
                         help='mode for the client-serverssd to operate in')
     parser.add_argument('-p', '--port', dest='port', type=int, default=9980, help='port number for the server')
@@ -42,8 +41,8 @@ def get_peers_list():
 
 
 def server_address():
-    # self_ip = requests.get('https://api.ipify.org').text
-    self_ip = 'localhost'
+    self_ip = requests.get('https://api.ipify.org').text
+    # self_ip = 'localhost'
     print(self_ip)
     return self_ip + ':' + str(args.port)
 
@@ -64,16 +63,17 @@ if __name__ == '__main__':
     while True:
         for peer in peers:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(5)
             ip, port = peer.split(':')
             try:
-                sock.connect((ip, int(port)))
+                sock.connect((ip, int(port)), )
                 msg = 'ping' + str(i)
                 i += 1
                 sock.sendall(msg.encode())
                 print('sending "%s" to %s' % (msg, peer))
                 reply = sock.recv(4096)
                 print("reply:", reply.decode())
-            except ConnectionRefusedError:
+            except Exception:
                 print('cannot connect to', peer)
             finally:
                 sock.close()

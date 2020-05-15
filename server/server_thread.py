@@ -19,7 +19,7 @@ class ServerThread(threading.Thread):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         # Bind the socket to the port
-        server_address = ('localhost', self.port)
+        server_address = ('0.0.0.0', self.port)
         print('starting up on %s port %s' % server_address)
 
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
