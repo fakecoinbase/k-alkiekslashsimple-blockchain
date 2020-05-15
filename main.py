@@ -1,18 +1,21 @@
 import argparse
+import socket
 import threading
+from queue import Queue
 from time import sleep
-import grpc
-import blockchain_pb2_grpc
-from blockchain_pb2 import PingMsg
-from server_thread import ServerThread
+
+import requests
 import yaml
+
+from server.ServerRequestDispatcher import ServerRequestDispatcher
+from server.server_thread import ServerThread
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='Simple blockchain client-server')
+    parser = argparse.ArgumentParser(description='Simple blockchain client-serverssd')
     parser.add_argument('mode', type=str, choices=['miner', 'client'], default='miner',
-                        help='mode for the client-server to operate in')
-    parser.add_argument('-p', '--port', dest='port', default=9980, help='port number for the server')
+                        help='mode for the client-serverssd to operate in')
+    parser.add_argument('-p', '--port', dest='port', type=int, default=9980, help='port number for the server')
     parser.add_argument('-pl', '--peers-list', dest='peers_path', default='./peers.yaml',
                         help='peers list yaml file')
     parser.add_argument('-c', '--consensus', dest='algorithm', type=str, choices=['pow', 'bft'], default='pow',
@@ -23,9 +26,9 @@ def parse_args():
     return parser.parse_args()
 
 
-def get_peers_list(path, self_port):
+def get_peers_list():
     peer_dicts = []
-    with open(path, 'r') as file:
+    with open(args.peers_path, 'r') as file:
         peers_yaml = yaml.load(file, Loader=yaml.FullLoader)
         peer_dicts = peers_yaml['peers']
 
@@ -34,36 +37,44 @@ def get_peers_list(path, self_port):
         ip, start_port, count = peer_dict['ip'], peer_dict['start_port'], peer_dict['count']
         peers_list.extend(['%s:%d' % (ip, port) for port in range(start_port, start_port + count)])
 
-    peers_list.remove('localhost:'+str(self_port))
+    peers_list.remove(server_address())
     return peers_list
+
+
+def server_address():
+    # self_ip = requests.get('https://api.ipify.org').text
+    self_ip = 'localhost'
+    print(self_ip)
+    return self_ip + ':' + str(args.port)
 
 
 if __name__ == '__main__':
     args = parse_args()
-    peers = get_peers_list(args.peers_path, args.port)
+    peers = get_peers_list()
     print(peers)
     server_cond = threading.Condition()
 
-    server_thread = ServerThread(args.port, server_cond)
-    server_thread.start()
+    BUF_SIZE = 100
+    server_queue = Queue(BUF_SIZE)
+    ServerThread(args.port, server_queue).start()
+    server_dispatcher = ServerRequestDispatcher(server_queue, server_address())
+    server_dispatcher.start()
 
-    channels = [grpc.insecure_channel(peer) for peer in peers]
-    stubs = [blockchain_pb2_grpc.BlockchainServiceStub(channel) for channel in channels]
-
-    try:
-        while True:
-            for i in range(len(stubs)):
-                stub, peer = stubs[i], peers[i]
-                ping_msg = PingMsg(msg="hello")
-                print('pinging', peer, ' :', ping_msg.msg)
-                try:
-                    reply = stub.Ping(ping_msg)
-                    print('reply:', reply.msg)
-                except grpc._channel._InactiveRpcError as e:
-                    print(peer, 'not online')
-                    channel = grpc.insecure_channel(peer)
-                    stubs[i] = blockchain_pb2_grpc.BlockchainServiceStub(channel)
-                sleep(1)
-    except KeyboardInterrupt:
-        with server_cond:
-            server_cond.notify()
+    i = 0
+    while True:
+        for peer in peers:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            ip, port = peer.split(':')
+            try:
+                sock.connect((ip, int(port)))
+                msg = 'ping' + str(i)
+                i += 1
+                sock.sendall(msg.encode())
+                print('sending "%s" to %s' % (msg, peer))
+                reply = sock.recv(4096)
+                print("reply:", reply.decode())
+            except ConnectionRefusedError:
+                print('cannot connect to', peer)
+            finally:
+                sock.close()
+        sleep(2)
