@@ -1,23 +1,28 @@
 import binascii
 import datetime
 import collections
+from typing import List
+
 from Crypto.Hash import SHA
+
+from utxo import Utxo
 
 
 class Transaction:
 
-    def __init__(self, originator, recipient, inputs, outputs, witnesses_included):
+    inputs: List[Utxo]
+
+    def __init__(self, originator, recipients, inputs, value, witnesses_included=True):
         """
         Constructor for the 'Transaction' class.
         :param originator: client object.
-        :param recipient: the recipient(s) public key.
-        :param inputs:
-        :param outputs:
+        :param recipients: the recipient(s) public key.
+        :param inputs: UTXO(s)
+        :param value: value to be transferred.
         :param witnesses_included: flag.
         """
-        self.outputs = outputs
         self.originator = originator
-        self.recipient = recipient
+        self.recipients = recipients
         self.inputs = inputs
         self.timestamp = datetime.datetime.now()
         self.witnesses_included = witnesses_included
@@ -28,9 +33,8 @@ class Transaction:
             'signature': self.signature,
             'witness_included': self.witnesses_included,
             'originator': self.originator.public_key,
-            'recipient': self.recipient,
+            'recipient': self.recipients,
             'inputs': self.inputs,
-            'outputs': self.outputs,
             'time': self.timestamp
         })
 
