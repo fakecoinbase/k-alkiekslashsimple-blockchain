@@ -1,8 +1,9 @@
+import pickle
 import threading
 from queue import Queue
 from socket import socket
 
-from util.request import Request
+from server.event import Event
 
 
 class ConnectionThread(threading.Thread):
@@ -19,18 +20,18 @@ class ConnectionThread(threading.Thread):
         try:
             print('connection from', self.client_address)
             # Receive message
-            msg = self.connection.recv(4096)
+            req = self.connection.recv(4096)
+            request = pickle.loads(req)
 
-            # Unpack and create request object
-            condition = threading.Condition()
-            request = Request(condition, msg.decode(), self.client_address)
+            # Unpack and create event object
+            event = Event(request, self.client_address)
 
-            with condition:
-                self.queue.put(request)
-                condition.wait()
+            with event.condition:
+                self.queue.put(event)
+                event.condition.wait()
 
             # Receive the data in small chunks and retransmit it
-            self.connection.sendall(request.response.encode())
+            self.connection.sendall(pickle.dumps(event.response))
 
         finally:
             # Clean up the connection
