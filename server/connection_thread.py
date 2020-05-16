@@ -4,6 +4,7 @@ from queue import Queue
 from socket import socket
 
 from server.event import Event
+from util.helpers import recv_bytes, send_bytes
 
 
 class ConnectionThread(threading.Thread):
@@ -20,7 +21,7 @@ class ConnectionThread(threading.Thread):
         try:
             print('connection from', self.client_address)
             # Receive message
-            req = self.connection.recv(4096)
+            req = recv_bytes(self.connection)
             request = pickle.loads(req)
 
             # Unpack and create event object
@@ -31,8 +32,7 @@ class ConnectionThread(threading.Thread):
                 event.condition.wait()
 
             # Receive the data in small chunks and retransmit it
-            self.connection.sendall(pickle.dumps(event.response))
-
+            send_bytes(self.connection, pickle.dumps(event.response))
         finally:
             # Clean up the connection
             self.connection.close()

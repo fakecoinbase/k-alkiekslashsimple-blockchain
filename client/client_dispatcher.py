@@ -4,6 +4,7 @@ import threading
 from queue import Queue
 
 from model import Model
+from util.helpers import recv_bytes, send_bytes
 
 
 def broadcast(peers_addresses, message):
@@ -15,8 +16,8 @@ def broadcast(peers_addresses, message):
         ip, port = peer_address.split(':')
         try:
             sock.connect((ip, int(port)), )
-            sock.sendall(pickle.dumps(message))  # TODO: Add payload size and recvall
-            reply = sock.recv(4096)
+            send_bytes(sock, pickle.dumps(message))
+            reply = recv_bytes(sock)
             responses[peer_address] = pickle.loads(reply)
         except Exception as e:
             print('Could not send %s to %s' % (type(message).__name__, peer_address))

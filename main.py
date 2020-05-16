@@ -89,5 +89,3 @@ if __name__ == '__main__':
             broadcast_queue.put(advertise_event)
             advertise_event.condition.wait()
 
-        # print('peers:', model.active_peers)
-        # sleep(5)
