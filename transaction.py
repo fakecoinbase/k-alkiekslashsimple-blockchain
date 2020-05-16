@@ -39,6 +39,16 @@ class Transaction:
             'time': self.__timestamp
         })
 
+        #       At the receiver side, verification can be done using the public part of the RSA key:
+        #
+        #   >>> key = RSA.importKey(open('pubkey.der').read())
+        #   >>> h = SHA.new(message)
+        #   >>> verifier = PKCS1_v1_5.new(key)
+        #   >>> if verifier.verify(h, signature):
+        #   >>>    print "The signature is authentic."
+        #   >>> else:
+        #   >>>    print "The signature is not authentic."
+
     def sign_transaction(self, pk=None):
         # assert (pk, self.__originator.public_key)
         h = SHA256.new(str(self.to_dict()).encode('utf8'))
@@ -63,15 +73,4 @@ class Transaction:
     # TODO: transaction verification
     # TODO: signature verification
 
-    '''
-        At the receiver side, verification can be done using the public part of the RSA key:
-    
-    >>> key = RSA.importKey(open('pubkey.der').read())
-    >>> h = SHA.new(message)
-    >>> verifier = PKCS1_v1_5.new(key)
-    >>> if verifier.verify(h, signature):
-    >>>    print "The signature is authentic."
-    >>> else:
-    >>>    print "The signature is not authentic."
-    
-    '''
+
