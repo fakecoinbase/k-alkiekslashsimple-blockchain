@@ -1,16 +1,12 @@
 import binascii
 import datetime
 import collections
-from typing import List
-
-from Crypto.Hash import SHA
+from Crypto.Hash import SHA256
 
 from utxo import Utxo
 
 
 class Transaction:
-
-    inputs: List[Utxo]
 
     def __init__(self, originator, recipients, inputs, value, witnesses_included=True):
         """
@@ -21,32 +17,49 @@ class Transaction:
         :param value: value to be transferred.
         :param witnesses_included: flag.
         """
-        self.originator = originator
-        self.recipients = recipients
-        self.inputs = inputs
-        self.timestamp = datetime.datetime.now()
-        self.witnesses_included = witnesses_included
-        self.signature = None
+        self.__originator = originator
+        self.__recipients = recipients
+        self.__inputs = inputs
+        self.__timestamp = datetime.datetime.now()
+        self.__witnesses_included = witnesses_included
+        self.__value = value
+        self.__signature = None
+        self.__generate_outputs()
 
     def to_dict(self):
         return collections.OrderedDict({
-            'signature': self.signature,
-            'witness_included': self.witnesses_included,
-            'originator': self.originator.public_key,
-            'recipient': self.recipients,
-            'inputs': self.inputs,
-            'time': self.timestamp
+            'signature': self.__signature,
+            'witness_included': self.__witnesses_included,
+            'originator': self.__originator.public_key,
+            'recipient': self.__recipients,
+            'inputs': self.__inputs,
+            'outputs': self.__outputs,
+            'time': self.__timestamp
         })
 
-    def sign_transaction(self):
-        h = SHA.new(str(self.to_dict()).encode('utf8'))
-        self.signature = binascii.hexlify(self.originator.signer.sign(h)).decode('ascii')
+    def sign_transaction(self, pk=None):
+        # assert (pk, self.__originator.public_key)
+        h = SHA256.new(str(self.to_dict()).encode('utf8'))
+        self.__signature = binascii.hexlify(self.__originator.signer.sign(h)).decode('ascii')
 
     def get_signature(self):
-        return self.signature
+        return self.__signature
 
-    def payee_pk(self):
-        return self.recipient
+    def __generate_outputs(self):
+        output_idx = 1
+        total_val = 0
+        outputs = []
+        for unspent_tx in self.__inputs:
+            total_val += unspent_tx.get_value()
+        transfer_val = self.__value / len(self.__recipients)
+        for rec in self.__recipients:
+            outputs.append(Utxo(self, output_idx, transfer_val, rec.public_key))
+            output_idx += 1
+        outputs.append(Utxo(self, output_idx, total_val - self.__value, self.__originator.public_key))
+        self.__outputs = outputs
+
+    # TODO: transaction verification
+    # TODO: signature verification
 
     '''
         At the receiver side, verification can be done using the public part of the RSA key:
