@@ -2,22 +2,26 @@ import binascii
 import datetime
 import collections
 from Crypto.Hash import SHA256
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives import hashes
 
 from utxo import Utxo
 
 
 class Transaction:
 
-    def __init__(self, originator, recipients, inputs, value, witnesses_included=True):
+    def __init__(self, originator_pk, originator_sk, recipients, inputs, value, witnesses_included=True):
         """
         Constructor for the 'Transaction' class.
-        :param originator: client object.
+        :param originator_pk: public_key.
+        :param originator_sk: secret_key.
         :param recipients: the recipient(s) public key.
         :param inputs: UTXO(s)
         :param value: value to be transferred.
         :param witnesses_included: flag.
         """
-        self.__originator = originator
+        self.__originator = originator_pk
+        self.__sign_sk = originator_sk
         self.__recipients = recipients
         self.__inputs = inputs
         self.__timestamp = datetime.datetime.now()
@@ -30,7 +34,7 @@ class Transaction:
         return collections.OrderedDict({
             'signature': self.__signature,
             'witness_included': self.__witnesses_included,
-            'originator': self.__originator.public_key,
+            'originator': self.__originator,
             'recipient': self.__recipients,
             'ip_counter': len(self.__inputs),
             'inputs': self.__inputs,
@@ -49,10 +53,18 @@ class Transaction:
         #   >>> else:
         #   >>>    print "The signature is not authentic."
 
-    def sign_transaction(self, pk=None):
-        # assert (pk, self.__originator.public_key)
-        h = SHA256.new(str(self.to_dict()).encode('utf8'))
-        self.__signature = binascii.hexlify(self.__originator.signer.sign(h)).decode('ascii')
+    def sign_transaction(self):
+        # h = SHA256.new(str(self.to_dict()).encode('utf8'))
+        # self.__signature = binascii.hexlify(self.__originator.signer.sign(h)).decode('ascii')
+        self.__signature = self.__sign_sk.sign(
+            data=str(self.to_dict()).encode('utf-8'),
+            padding=padding.PSS(
+                mgf=padding.MGF1(hashes.SHA256()),
+                salt_length=padding.PSS.MAX_LENGTH
+            ),
+            algorithm=hashes.SHA256()
+
+        )
 
     def get_signature(self):
         return self.__signature
@@ -65,12 +77,17 @@ class Transaction:
             total_val += unspent_tx.get_value()
         transfer_val = self.__value / len(self.__recipients)
         for rec in self.__recipients:
-            outputs.append(Utxo(self, output_idx, transfer_val, rec.public_key))
+            outputs.append(Utxo(self, output_idx, transfer_val, rec))
             output_idx += 1
-        outputs.append(Utxo(self, output_idx, total_val - self.__value, self.__originator.public_key))
+        if total_val - self.__value > 0 :
+            outputs.append(Utxo(self, output_idx, total_val - self.__value, self.__originator))
         self.__outputs = outputs
 
+    # TODO: delete this method after integration
+    def get_timestamp(self):
+        return self.__timestamp
+
+    def get_outputs(self):
+        return self.__outputs
     # TODO: transaction verification
     # TODO: signature verification
-
-
