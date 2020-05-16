@@ -32,7 +32,9 @@ class Transaction:
             'witness_included': self.__witnesses_included,
             'originator': self.__originator.public_key,
             'recipient': self.__recipients,
+            'ip_counter': len(self.__inputs),
             'inputs': self.__inputs,
+            'op_counter': len(self.__outputs),
             'outputs': self.__outputs,
             'time': self.__timestamp
         })
