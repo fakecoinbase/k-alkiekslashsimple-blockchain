@@ -5,7 +5,7 @@ SIZE_NUM_BYTES = 4
 
 def send_bytes(sock: socket, payload: bytes):
     size_bytes = len(payload).to_bytes(SIZE_NUM_BYTES, byteorder='big')
-    print("send size bytes", len(payload))
+    # print("send size bytes", len(payload))
     payload = size_bytes + payload
     sock.sendall(payload)
 
@@ -13,7 +13,7 @@ def send_bytes(sock: socket, payload: bytes):
 def recv_bytes(sock: socket):
     size_bytes = recvall(sock, SIZE_NUM_BYTES)
     size = int.from_bytes(size_bytes, 'big')
-    print("received size bytes", size)
+    # print("received size bytes", size)
     return recvall(sock, size)
 
 
