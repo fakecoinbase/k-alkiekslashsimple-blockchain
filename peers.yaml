@@ -1,7 +1,7 @@
 peers:
   - name: 'khaled'
-    ip: localhost
-    start_port: 9980
+    ip: 197.135.229.36
+    start_port: 8180
     count: 4
 
 #  - name: 'hostname'

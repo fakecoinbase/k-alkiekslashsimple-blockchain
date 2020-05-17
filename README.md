@@ -9,10 +9,6 @@ Implementation of a simple blockchain in python made as the final project of the
    ```
    pip install -r requirements.txt
    ```
-4. To compile proto files run the following command:
-   ```
-   $ python -m grpc_tools.protoc -I./proto --python_out=. --grpc_python_out=. ./proto/blockchain.proto
-   ```
 5. Run `main.py` with flag `-h` for info on available commands and flags:
    ```
    $ python main.py -h
