@@ -1,7 +1,7 @@
 import unittest
 
 from client import Client
-from transaction import Transaction
+from transaction.transaction import Transaction
 
 
 class MyTestCase(unittest.TestCase):

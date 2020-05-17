@@ -5,7 +5,7 @@ from typing import List
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives import hashes
 
-from utxo import Utxo
+from transaction.utxo import Utxo
 
 
 class Transaction:
