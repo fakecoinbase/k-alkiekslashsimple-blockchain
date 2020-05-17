@@ -1,4 +1,4 @@
-from block import Block
+from chain.block import Block
 class Blockchain():
 
     def __init__(self, size):
@@ -18,7 +18,7 @@ class Blockchain():
         :param previous_hash: (Optional) <str> Hash of previous Block
         :return: <dict> New Block
         """
-        return new Block()
+      #  return new Block()
     def add_and_validate_block(self):
         pass
     def validate(self):
