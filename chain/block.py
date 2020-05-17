@@ -59,7 +59,7 @@ class Block:
     def previous_hash(self, ph):
         self._previous_hash = ph
 
-    @property
+    @propertygit
     def merkle_root(self):
         return self._merkle_root
 
