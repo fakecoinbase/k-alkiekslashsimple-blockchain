@@ -65,8 +65,6 @@ class Transaction:
         outputs = []
         for unspent_tx in self.__inputs:
             total_val += unspent_tx.get_value()
-        if total_val < self.__value:
-            raise Exception('Transaction creation failed.', 'Attempt for overspending rejected.')
         transfer_val = self.__value / len(self.__recipients)
         for rec in self.__recipients:
             outputs.append(Utxo(self, output_idx, transfer_val, rec))

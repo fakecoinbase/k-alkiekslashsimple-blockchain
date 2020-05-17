@@ -27,11 +27,22 @@ class Client:
         signature = tx.get_signature()
         tx = tx.to_dict()
         public_key = tx['originator']
+        used_value = 0
         for ip in tx['inputs']:
+            used_value += ip.get_value()
             if ip.get_recipient_pk() != public_key:
                 print("Non matching recipient and originator.")
                 return False
         # Step #2:
+        # check overspending
+        transferred_value = 0
+        for op in tx['outputs']:
+            if op.get_recipient_pk() != public_key:
+                transferred_value += op.get_value()
+        if transferred_value > used_value:
+            print("Overspending rejected.")
+            return False
+        # Step #3:
         # validate the signature of the originator
         try:
             public_key.verify(
