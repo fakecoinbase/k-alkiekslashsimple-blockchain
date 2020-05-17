@@ -1,4 +1,4 @@
-from hashlib import sha256
+from util.helpers import hash_transaction
 
 
 class Utxo:
@@ -6,7 +6,7 @@ class Utxo:
     def __init__(self, tx, op_index, value, pk):
         self.tx_signature = tx.get_signature()
         self.__payee_pk = pk
-        self.__tx_hash = sha256(str(tx.to_dict()).encode('utf-8')).hexdigest()
+        self.__tx_hash = hash_transaction(tx)
         self.__idx = op_index
         self.__value = value
 
