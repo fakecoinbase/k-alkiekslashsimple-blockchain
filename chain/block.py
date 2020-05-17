@@ -1,9 +1,10 @@
 import hashlib
+import datetime
 
 
 class Block:
     def __init__(self):
-        self._time_stamp = ""
+        self._time_stamp = datetime.datetime.now()
         self._transactions = []
         self._previous_hash = ""
         self._merkle_root = ""
@@ -12,6 +13,8 @@ class Block:
 
     def __init__(self, previous_hash, merkle_root, timestamp=None, nonce=0, transactions=[]):
         self._time_stamp = timestamp
+        if timestamp is None:
+            self._time_stamp = datetime.datetime.now()
         self._transactions = transactions
         self._previous_hash = previous_hash
         self._merkle_root = merkle_root
