@@ -1,6 +1,8 @@
 import binascii
 import datetime
 import collections
+from typing import List
+
 from Crypto.Hash import SHA256
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives import hashes
@@ -9,6 +11,8 @@ from utxo import Utxo
 
 
 class Transaction:
+
+    __outputs: List[Utxo]
 
     def __init__(self, originator_pk, originator_sk, recipients, inputs, value, witnesses_included=True):
         """
@@ -27,12 +31,11 @@ class Transaction:
         self.__timestamp = datetime.datetime.now()
         self.__witnesses_included = witnesses_included
         self.__value = value
-        self.__signature = None
+        self.__signature = b''
         self.__generate_outputs()
 
     def to_dict(self):
         return collections.OrderedDict({
-            'signature': self.__signature,
             'witness_included': self.__witnesses_included,
             'originator': self.__originator,
             'recipient': self.__recipients,
@@ -63,7 +66,6 @@ class Transaction:
                 salt_length=padding.PSS.MAX_LENGTH
             ),
             algorithm=hashes.SHA256()
-
         )
 
     def get_signature(self):
@@ -87,6 +89,7 @@ class Transaction:
     def get_timestamp(self):
         return self.__timestamp
 
+    # TODO: delete this method after integration
     def get_outputs(self):
         return self.__outputs
     # TODO: transaction verification
