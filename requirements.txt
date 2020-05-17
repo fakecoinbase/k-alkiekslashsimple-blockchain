@@ -2,6 +2,5 @@ grpcio
 grpcio-tools
 requests
 pyyaml
-pycrypto
 pytest
 cryptography

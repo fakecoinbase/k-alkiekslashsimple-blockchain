@@ -1,9 +1,7 @@
-import binascii
 import datetime
 import collections
 from typing import List
 
-from Crypto.Hash import SHA256
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives import hashes
 
@@ -45,16 +43,6 @@ class Transaction:
             'outputs': self.__outputs,
             'time': self.__timestamp
         })
-
-        #       At the receiver side, verification can be done using the public part of the RSA key:
-        #
-        #   >>> key = RSA.importKey(open('pubkey.der').read())
-        #   >>> h = SHA.new(message)
-        #   >>> verifier = PKCS1_v1_5.new(key)
-        #   >>> if verifier.verify(h, signature):
-        #   >>>    print "The signature is authentic."
-        #   >>> else:
-        #   >>>    print "The signature is not authentic."
 
     def sign_transaction(self):
         # h = SHA256.new(str(self.to_dict()).encode('utf8'))
