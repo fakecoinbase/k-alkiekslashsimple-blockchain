@@ -85,6 +85,7 @@ if __name__ == '__main__':
         if msg == '':
             continue
         advertise_event = BroadcastEvent(PingMessage(msg))
+
         with advertise_event.condition:
             broadcast_queue.put(advertise_event)
             advertise_event.condition.wait()
