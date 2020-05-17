@@ -1,4 +1,5 @@
 import argparse
+import pickle
 import socket
 import threading
 from queue import Queue
@@ -6,8 +7,13 @@ from time import sleep
 import requests
 import yaml
 
-from server.ServerRequestDispatcher import ServerRequestDispatcher
+import model
+from client.broadcast_event import BroadcastEvent
+from client.client_dispatcher import ClientDispatcher
+from server.server_dispatcher import ServerDispatcher
 from server.server_thread import ServerThread
+from util.message.advertise_self_message import AdvertiseSelfMessage
+from util.message.ping_message import PingMessage
 
 
 def parse_args():
@@ -49,33 +55,37 @@ def server_address():
 
 if __name__ == '__main__':
     args = parse_args()
-    peers = get_peers_list()
-    print(peers)
-    server_cond = threading.Condition()
+    peers_address_database = get_peers_list()
+    print(peers_address_database)
+
+    model = model.Model(server_address())
 
     BUF_SIZE = 100
     server_queue = Queue(BUF_SIZE)
-    ServerThread(args.port, server_queue).start()
-    server_dispatcher = ServerRequestDispatcher(server_queue, server_address())
+    server_thread = ServerThread(args.port, server_queue)
+    server_dispatcher = ServerDispatcher(server_queue, model)
+
+    server_thread.setDaemon(True)
+    server_thread.start()
+    server_dispatcher.setDaemon(True)
     server_dispatcher.start()
 
-    # TODO: replace this code with client logic
-    i = 0
+    broadcast_queue = Queue(BUF_SIZE)
+    client_dispatcher = ClientDispatcher(broadcast_queue, model)
+    client_dispatcher.setDaemon(True)
+    client_dispatcher.start()
+
+    advertise_event = BroadcastEvent(AdvertiseSelfMessage(model.peer_data), peers=peers_address_database)
+    with advertise_event.condition:
+        broadcast_queue.put(advertise_event)
+        advertise_event.condition.wait()
+
     while True:
-        for peer in peers:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(5)
-            ip, port = peer.split(':')
-            try:
-                sock.connect((ip, int(port)), )
-                msg = 'ping' + str(i)
-                i += 1
-                sock.sendall(msg.encode())
-                print('sending "%s" to %s' % (msg, peer))
-                reply = sock.recv(4096)
-                print("reply:", reply.decode())
-            except Exception:
-                print('cannot connect to', peer)
-            finally:
-                sock.close()
-        sleep(2)
+        msg = input("Enter message: ")
+        if msg == '':
+            continue
+        advertise_event = BroadcastEvent(PingMessage(msg))
+        with advertise_event.condition:
+            broadcast_queue.put(advertise_event)
+            advertise_event.condition.wait()
+
