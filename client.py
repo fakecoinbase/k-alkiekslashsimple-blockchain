@@ -58,3 +58,7 @@ class Client:
             print("Invalid Signature")
             return False
         return True
+
+    def verify_block(self, block):
+
+        return True

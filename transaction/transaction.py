@@ -80,5 +80,3 @@ class Transaction:
     # TODO: delete this method after integration
     def get_outputs(self):
         return self.__outputs
-    # TODO: transaction verification
-    # TODO: signature verification
