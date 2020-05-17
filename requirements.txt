@@ -1,4 +1,4 @@
-grpcio
-grpcio-tools
 requests
 pyyaml
+pytest
+cryptography
