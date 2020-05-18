@@ -9,7 +9,6 @@ from transaction.utxo import Utxo
 
 
 class Transaction:
-
     __outputs: List[Utxo]
 
     def __init__(self, originator_pk, originator_sk, recipients, inputs, value, witnesses_included=True):
@@ -31,10 +30,14 @@ class Transaction:
         self.__value = value
         self.__signature = b''
         self.__generate_outputs()
+        self.__witnesses = []
+        if self.__witnesses_included:
+            self.__set_witnesses()
 
     def to_dict(self):
         return collections.OrderedDict({
-            'witness_included': self.__witnesses_included,
+            'witnesses_included': self.__witnesses_included,
+            'witnesses': self.__witnesses,
             'originator': self.__originator,
             'recipient': self.__recipients,
             'ip_counter': len(self.__inputs),
@@ -71,7 +74,7 @@ class Transaction:
         for rec in self.__recipients:
             outputs.append(Utxo(self, output_idx, transfer_val, rec))
             output_idx += 1
-        if total_val - self.__value > 0 :
+        if total_val - self.__value > 0:
             outputs.append(Utxo(self, output_idx, total_val - self.__value, self.__originator))
         self.__outputs = outputs
 
@@ -82,5 +85,9 @@ class Transaction:
     # TODO: delete this method after integration
     def get_outputs(self):
         return self.__outputs
+
     # TODO: transaction verification
     # TODO: signature verification
+    def __set_witnesses(self):
+        for ip in self.__inputs:
+            self.__witnesses.append(ip.get_recipient_pk())
