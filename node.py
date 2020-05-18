@@ -1,8 +1,7 @@
-from cryptography.exceptions import InvalidSignature
-from cryptography.hazmat.primitives.asymmetric import padding
-from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
+
+from transaction.transaction import Transaction
 
 
 class Client:
@@ -14,51 +13,29 @@ class Client:
             backend=default_backend()
         )
         self.public_key = self.__secret_key.public_key()
-
-        # self.signer = PKCS1_v1_5.new(self.__secret_key)
+        self.__wallet = []
 
     # TODO: delete this method after integration
     def get_sk(self):
         return self.__secret_key
 
-    def validate_transaction(self, tx):
-        # Step #1:
-        # make sure that the originator is the actual recipient of the input utxos
-        signature = tx.get_signature()
-        tx = tx.to_dict()
-        public_key = tx['originator']
-        used_value = 0
-        for ip in tx['inputs']:
-            used_value += ip.get_value()
-            if ip.get_recipient_pk() != public_key:
-                print("Non matching recipient and originator.")
-                return False
-        # Step #2:
-        # check overspending
-        transferred_value = 0
-        for op in tx['outputs']:
-            if op.get_recipient_pk() != public_key:
-                transferred_value += op.get_value()
-        if transferred_value > used_value:
-            print("Overspending rejected.")
-            return False
-        # Step #3:
-        # validate the signature of the originator
-        try:
-            public_key.verify(
-                signature=signature,
-                data=str(tx).encode('utf-8'),
-                padding=padding.PSS(
-                    mgf=padding.MGF1(hashes.SHA256()),
-                    salt_length=padding.PSS.MAX_LENGTH
-                ),
-                algorithm=hashes.SHA256()
-            )
-        except InvalidSignature:
-            print("Invalid Signature")
-            return False
-        return True
+    # TODO: transaction generation mechanism
+    def generate_tx(self, outputs):
+        value = 0
+        for pair in outputs:
+            value += pair[1]
+        total = 0
+        inputs = []
+        for ip in self.__wallet:
+            total += ip.get_value()
+            ip.sign(self.__secret_key)
+            inputs.append(ip)
+            if total >= value:
+                break
+        tx = Transaction(self.__secret_key, self.public_key, inputs, outputs, True)
 
-    def verify_block(self, block):
-
-        return True
+    def maybe_store_output(self, block):
+        for tx in block.transactions():
+            for op in tx.get_outputs():
+                if op.get_recipient_pk() == self.public_key:
+                    self.__wallet.append(op)
