@@ -1,6 +1,5 @@
 import datetime
 import collections
-from typing import List
 
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives import hashes
@@ -9,37 +8,33 @@ from transaction.utxo import Utxo
 
 
 class Transaction:
-    __outputs: List[Utxo]
 
-    def __init__(self, originator_pk, originator_sk, recipients, inputs, value, witnesses_included=True):
+    def __init__(self, originator_pk, originator_sk, inputs, outputs, witnesses_included=True):
         """
         Constructor for the 'Transaction' class.
         :param originator_pk: public_key.
         :param originator_sk: secret_key.
-        :param recipients: the recipient(s) public key.
+        :param outputs: list of pairs(pk, value).
         :param inputs: UTXO(s)
-        :param value: value to be transferred.
         :param witnesses_included: flag.
         """
         self.__originator = originator_pk
         self.__sign_sk = originator_sk
-        self.__recipients = recipients
         self.__inputs = inputs
         self.__timestamp = datetime.datetime.now()
         self.__witnesses_included = witnesses_included
-        self.__value = value
-        self.__signature = b''
-        self.__generate_outputs()
         self.__witnesses = []
         if self.__witnesses_included:
             self.__set_witnesses()
+        self.destinations = outputs
+        self.__signature = b''
+        self.__generate_outputs()
 
     def to_dict(self):
         return collections.OrderedDict({
+            'originator': self.__originator,
             'witnesses_included': self.__witnesses_included,
             'witnesses': self.__witnesses,
-            'originator': self.__originator,
-            'recipient': self.__recipients,
             'ip_counter': len(self.__inputs),
             'inputs': self.__inputs,
             'op_counter': len(self.__outputs),
@@ -48,8 +43,6 @@ class Transaction:
         })
 
     def sign_transaction(self):
-        # h = SHA256.new(str(self.to_dict()).encode('utf8'))
-        # self.__signature = binascii.hexlify(self.__originator.signer.sign(h)).decode('ascii')
         self.__signature = self.__sign_sk.sign(
             data=str(self.to_dict()).encode('utf-8'),
             padding=padding.PSS(
@@ -64,17 +57,10 @@ class Transaction:
 
     def __generate_outputs(self):
         output_idx = 1
-        total_val = 0
-        outputs = []
-        for unspent_tx in self.__inputs:
-            total_val += unspent_tx.get_value()
-        transfer_val = self.__value / len(self.__recipients)
-        for rec in self.__recipients:
-            outputs.append(Utxo(self, output_idx, transfer_val, rec))
+        self.__outputs = []
+        for pair in self.destinations:
+            self.__outputs.append(Utxo(self, output_idx))
             output_idx += 1
-        if total_val - self.__value > 0:
-            outputs.append(Utxo(self, output_idx, total_val - self.__value, self.__originator))
-        self.__outputs = outputs
 
     # TODO: delete this method after integration
     def get_timestamp(self):
@@ -86,5 +72,5 @@ class Transaction:
 
     def __set_witnesses(self):
         for ip in self.__inputs:
-            self.__witnesses.append(ip.get_recipient_pk())
+            self.__witnesses.append(ip.get_transaction_hash())
 
