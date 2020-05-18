@@ -1,10 +1,6 @@
 import collections
 
-from cryptography.exceptions import InvalidSignature
-
-from util.helpers import hash_transaction
-from cryptography.hazmat.primitives.asymmetric import padding
-from cryptography.hazmat.primitives import hashes
+from util.helpers import hash_transaction, verify_signature, sign
 
 
 class Utxo:
@@ -36,27 +32,10 @@ class Utxo:
         })
 
     def sign(self, sk):
-        self.__signature = sk.sign(
-            data=str(self.__to_dict()).encode('utf-8'),
-            padding=padding.PSS(
-                mgf=padding.MGF1(hashes.SHA256()),
-                salt_length=padding.PSS.MAX_LENGTH
-            ),
-            algorithm=hashes.SHA256()
-        )
+        self.__signature = sign(str(self.__to_dict()), sk)
 
     def verify(self):
-        try:
-            self.__payee_pk.verify(
-                signature=self.__signature,
-                data=str(self.__to_dict()).encode('utf-8'),
-                padding=padding.PSS(
-                    mgf=padding.MGF1(hashes.SHA256()),
-                    salt_length=padding.PSS.MAX_LENGTH
-                ),
-                algorithm=hashes.SHA256()
-            )
-        except InvalidSignature:
-            print("Invalid Signature")
-            return False
-        return True
+        return verify_signature(self.__payee_pk, self.__signature, str(self.__to_dict()))
+
+    def get_signature(self):
+        return self.__signature

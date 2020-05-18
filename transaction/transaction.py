@@ -1,10 +1,7 @@
 import datetime
 import collections
-
-from cryptography.hazmat.primitives.asymmetric import padding
-from cryptography.hazmat.primitives import hashes
-
 from transaction.utxo import Utxo
+from util.helpers import sign
 
 
 class Transaction:
@@ -43,14 +40,7 @@ class Transaction:
         })
 
     def sign_transaction(self):
-        self.__signature = self.__sign_sk.sign(
-            data=str(self.to_dict()).encode('utf-8'),
-            padding=padding.PSS(
-                mgf=padding.MGF1(hashes.SHA256()),
-                salt_length=padding.PSS.MAX_LENGTH
-            ),
-            algorithm=hashes.SHA256()
-        )
+        self.__signature = sign(str(self.to_dict()), self.__sign_sk)
 
     def get_signature(self):
         return self.__signature
@@ -72,5 +62,5 @@ class Transaction:
 
     def __set_witnesses(self):
         for ip in self.__inputs:
-            self.__witnesses.append(ip.get_transaction_hash())
+            self.__witnesses.append(ip.get_signature())
 

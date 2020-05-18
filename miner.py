@@ -1,10 +1,8 @@
 from cryptography.hazmat.backends import default_backend
-from cryptography.exceptions import InvalidSignature
-from cryptography.hazmat.primitives.asymmetric import padding
-from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import rsa
 
 from chain.blockchain import Blockchain
+from util.helpers import verify_signature
 
 CHAIN_SIZE = 200
 
@@ -46,17 +44,8 @@ class Miner:
             return False
         # Step #3:
         # validate the signature of the originator
-        try:
-            public_key.verify(
-                signature=signature,
-                data=str(tx).encode('utf-8'),
-                padding=padding.PSS(
-                    mgf=padding.MGF1(hashes.SHA256()),
-                    salt_length=padding.PSS.MAX_LENGTH
-                ),
-                algorithm=hashes.SHA256()
-            )
-        except InvalidSignature:
-            print("Invalid Signature")
-            return False
-        return True
+        return verify_signature(public_key, signature, str(tx))
+        # Step #4:
+        # check double spending
+
+
