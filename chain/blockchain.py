@@ -12,6 +12,7 @@ class Blockchain():
     # toDo set configration for each block
     MAX_SIZE = 0  # to be set
     DIFFICULTY = 0
+
     #toDo don't forget to set height
     def __init__(self, block):
         self._block = block
@@ -41,9 +42,6 @@ class Blockchain():
                 return True
         return False
 
-
-
-
     def get_block_of_transaction(self, tran_id):
         if self._block.contains_transaction(tran_id):
             return self
@@ -53,18 +51,29 @@ class Blockchain():
             if curr is not None:
                 break
         return curr
+
     #longest tree path
     def get_head_of_chain(self):
         if not self.block_chain:
             return self
-        max = 0
+        maximum = 0
         curr = None
         for child in self.block_chain:
-            height = child.block.block_height
-            if height >= max:
-                max = height
+            d = child.depth()
+            if d > maximum:
+                maximum = d
                 curr = child.get_head_of_chain()
         return curr
+
+    def depth(self):
+        if not self.block_chain:
+            return 1
+        maximum = 0
+        for child in self.block_chain:
+            d = child.depth()
+            if d > maximum:
+                maximum = d
+        return maximum + 1
 
     def validate(self):
         pass
