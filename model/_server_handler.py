@@ -1,30 +1,28 @@
 from util.message.advertise_self_message import AdvertiseSelfMessage
-
-from typing import TYPE_CHECKING
-
 from util.message.ping_message import PingMessage
 
-if TYPE_CHECKING:
-    from model import Model
 
+class ServerHandler:
+    def __init__(self, model):
+        self.model = model
 
-def handle_server_message(self: 'Model', message):
-    handler = server_handlers_binding[type(message)]
-    response = handler(self, message)
-    return response
+    @property
+    def server_handlers_binding(self):
+        return {
+            AdvertiseSelfMessage: self.new_peer_handler,
+            PingMessage: self.ping_handler
+        }
 
+    def handle(self, message):
+        handler = self.server_handlers_binding[type(message)]
+        response = handler(message)
+        return response
 
-def new_peer_handler(self: 'Model', message: AdvertiseSelfMessage):
-    self.active_peers.append(message.peer_data)
-    return self.peer_data
+    def new_peer_handler(self, message: AdvertiseSelfMessage):
+        self.model.active_peers.append(message.peer_data)
+        print(self.model.active_peers)
+        return self.model.peer_data
 
-
-def ping_handler(self: 'Model', message: PingMessage):
-    print(message.msg)
-    return PingMessage('received by: ' + self.server_address)
-
-
-server_handlers_binding = {
-    AdvertiseSelfMessage: new_peer_handler,
-    PingMessage: ping_handler
-}
+    def ping_handler(self, message: PingMessage):
+        print(message.msg)
+        return PingMessage('received by: ' + self.model.server_address)

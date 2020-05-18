@@ -68,8 +68,6 @@ class Transaction:
         outputs = []
         for unspent_tx in self.__inputs:
             total_val += unspent_tx.get_value()
-        if total_val < self.__value:
-            raise Exception('Transaction creation failed.', 'Attempt for overspending rejected.')
         transfer_val = self.__value / len(self.__recipients)
         for rec in self.__recipients:
             outputs.append(Utxo(self, output_idx, transfer_val, rec))
@@ -86,8 +84,7 @@ class Transaction:
     def get_outputs(self):
         return self.__outputs
 
-    # TODO: transaction verification
-    # TODO: signature verification
     def __set_witnesses(self):
         for ip in self.__inputs:
             self.__witnesses.append(ip.get_recipient_pk())
+
