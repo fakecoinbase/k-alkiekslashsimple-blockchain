@@ -10,9 +10,11 @@ import yaml
 import model
 from client.broadcast_event import BroadcastEvent
 from client.client_dispatcher import ClientDispatcher
+from model._bft.bft_state import PrePreparedState
 from server.server_dispatcher import ServerDispatcher
 from server.server_thread import ServerThread
 from util.message.advertise_self_message import AdvertiseSelfMessage
+from util.message.bft import PrePrepareMessage
 from util.message.ping_message import PingMessage
 
 
@@ -58,10 +60,11 @@ if __name__ == '__main__':
     peers_address_database = get_peers_list()
     print(peers_address_database)
 
-    model = model.Model(server_address())
-
     BUF_SIZE = 100
     server_queue = Queue(BUF_SIZE)
+    broadcast_queue = Queue(BUF_SIZE)
+    model = model.Model(server_address(), server_queue, broadcast_queue)
+
     server_thread = ServerThread(args.port, server_queue)
     server_dispatcher = ServerDispatcher(server_queue, model)
 
@@ -70,7 +73,7 @@ if __name__ == '__main__':
     server_dispatcher.setDaemon(True)
     server_dispatcher.start()
 
-    broadcast_queue = Queue(BUF_SIZE)
+
     client_dispatcher = ClientDispatcher(broadcast_queue, model)
     client_dispatcher.setDaemon(True)
     client_dispatcher.start()
@@ -80,13 +83,22 @@ if __name__ == '__main__':
         broadcast_queue.put(advertise_event)
         advertise_event.condition.wait()
 
+    while args.port == 8180:
+        model.bft_context.leader = True
+        # msg = input("Enter message: ")
+        # if msg == '':
+        #     continue
+        # advertise_event = BroadcastEvent(PingMessage(msg))
+        #
+        # with advertise_event.condition:
+        #     broadcast_queue.put(advertise_event)
+        #     advertise_event.condition.wait()
+        if len(model.active_peers) == 3:
+            model.broadcast_pre_prepare(PrePrepareMessage("hello"))
+            sleep(5)
+            model.broadcast_pre_prepare(PrePrepareMessage("hello 2"))
+            break
+
     while True:
-        msg = input("Enter message: ")
-        if msg == '':
-            continue
-        advertise_event = BroadcastEvent(PingMessage(msg))
-
-        with advertise_event.condition:
-            broadcast_queue.put(advertise_event)
-            advertise_event.condition.wait()
-
+        print('yay')
+        sleep(5)
