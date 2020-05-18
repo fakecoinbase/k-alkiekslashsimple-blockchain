@@ -3,6 +3,7 @@ import datetime
 from utils import *
 from transaction.transaction import Transaction
 from chain.errors import InvalidTransactions
+import util.helpers as helper
 
 
 class Block:
@@ -34,7 +35,7 @@ class Block:
     def _calculate_merkle_root(self):
         if len(self._transactions) < 1:
             raise InvalidTransactions(self._height, "Zero transactions in block. Coinbase transaction required")
-        merkle_base = [t.get_signature() for t in self.transactions]
+        merkle_base = [helper.hash_transaction(t) for t in self.transactions]
         while len(merkle_base) > 1:
             temp_merkle_base = []
             for i in range(0, len(merkle_base), 2):
@@ -117,7 +118,7 @@ class Block:
 
     def contains_transaction(self, transaction_id):
         for t in self.transactions:
-            if t.get_signature() == transaction_id:
+            if helper.hash_transaction(t) == transaction_id:
                 return True
         return False
 
