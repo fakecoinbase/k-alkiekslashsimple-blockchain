@@ -7,7 +7,7 @@ from chain.errors import InvalidTransactions
 
 class Block:
 
-    def __init__(self, height=-1, transactions=[],  previous_hash="", timestamp=None, nonce=-1):
+    def __init__(self, height=-1, transactions=[], previous_hash="", timestamp=None, nonce=-1):
         """
        :param height: height # of block
        :type height: int
@@ -34,7 +34,7 @@ class Block:
     def _calculate_merkle_root(self):
         if len(self._transactions) < 1:
             raise InvalidTransactions(self._height, "Zero transactions in block. Coinbase transaction required")
-        merkle_base = [t.tx_hash for t in self.transactions] #ToDo check with merit
+        merkle_base = [t.get_signature() for t in self.transactions]
         while len(merkle_base) > 1:
             temp_merkle_base = []
             for i in range(0, len(merkle_base), 2):
@@ -115,9 +115,9 @@ class Block:
     def merkle_root(self, mr):
         self._merkle_root = mr
 
-    def contains_transaction(self, transaction_id): #ToDo: check transcation id with merit
+    def contains_transaction(self, transaction_id):
         for t in self.transactions:
-            if t.id == transaction_id:
+            if t.get_signature() == transaction_id:
                 return True
         return False
 
@@ -132,8 +132,9 @@ class Block:
     def __str__(self):
         s = "Time stamp: " + str(self._time_stamp) + "\n"
         s = "Block Hash: " + str(self.block_hash()) + "\nBlockNo: " + str(self.block_height) + "\nBlock Data: \n"
-        for tx in self.transactions:
-            s += str(tx) + "\n" # ToDo: ask merit
+        # for tx in self.transactions:
+        #     s += str(tx) + "\n"  # ToDo: ask merit
         s += "Hashes: " + str(
-            self.nonce) + "\n prevHash: " + self._previous_hash + "\n Merkle root: " + self.merkle_root + "\n-------------- "
+            self.nonce) + "\n prevHash: " + self._previous_hash + "\n Merkle root: " + self.merkle_root \
+             + "\n--------------"
         return s
