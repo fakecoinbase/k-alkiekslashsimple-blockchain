@@ -4,6 +4,10 @@ from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import rsa
 
+from chain.blockchain import Blockchain
+
+CHAIN_SIZE = 200
+
 
 class Miner:
     def __init__(self):
@@ -13,9 +17,11 @@ class Miner:
             backend=default_backend()
         )
         self.public_key = self.__secret_key.public_key()
+        self.__blockchain = Blockchain(CHAIN_SIZE)
+        self.__unconfirmed_tx_pool = []
 
     def verify_block(self, block):
-
+        return True
 
     def validate_transaction(self, tx):
         # Step #1:
