@@ -6,20 +6,23 @@ from queue import Queue
 from time import sleep
 import requests
 import yaml
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
 
 import model
 from client.broadcast_event import BroadcastEvent
 from client.client_dispatcher import ClientDispatcher
+from model._bft.bft_state import PrePreparedState
 from server.server_dispatcher import ServerDispatcher
 from server.server_thread import ServerThread
 from util.message.advertise_self_message import AdvertiseSelfMessage
+from util.message.bft import PrePrepareMessage
 from util.message.ping_message import PingMessage
+from util.peer_data import PeerData
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Simple blockchain client-server')
-    parser.add_argument('mode', type=str, choices=['miner', 'client'], default='miner',
-                        help='mode for the client-serverssd to operate in')
     parser.add_argument('-p', '--port', dest='port', type=int, default=9980, help='port number for the server')
     parser.add_argument('-pl', '--peers-list', dest='peers_path', default='./peers.yaml',
                         help='peers list yaml file')
@@ -31,37 +34,57 @@ def parse_args():
     return parser.parse_args()
 
 
-def get_peers_list():
+def process_peer_configs():
     peer_dicts = []
     with open(args.peers_path, 'r') as file:
         peers_yaml = yaml.load(file, Loader=yaml.FullLoader)
         peer_dicts = peers_yaml['peers']
 
     peers_list = []
+    found_self = False
     for peer_dict in peer_dicts:
-        ip, start_port, count = peer_dict['ip'], peer_dict['start_port'], peer_dict['count']
-        peers_list.extend(['%s:%d' % (ip, port) for port in range(start_port, start_port + count)])
+        ip = peer_dict['ip']
+        for peer_info in peer_dict['peers']:
+            peer_data = PeerData(ip + ':' + str(peer_info['port']))
+            if peer_info['type'] == 'client':
+                peer_data.pk = key_pairs_database[peer_info['key-pair-id']]['pk']
+            if peer_info['port'] == args.port and ip == self_ip:  # This is me!
+                found_self = True
+                my_self_peer_data = peer_data
+                my_bft_leader = 'bft_leader' in peer_info and peer_info['bft-leader'] == 'true'
 
-    peers_list.remove(server_address())
-    return peers_list
+                if peer_info['type'] == 'client':
+                    skb = key_pairs_database[peer_info['key-pair-id']]['sk']
+                    my_sk = serialization.load_pem_private_key(skb, password=b'password', backend=default_backend())
+                else:
+                    my_sk = None
+                self_mode = peer_info['type']
+                continue
+            peers_list.append(peer_data)
+
+    return peers_list, my_self_peer_data, self_mode, my_bft_leader, my_sk
 
 
 def server_address():
-    self_ip = requests.get('https://api.ipify.org').text
-    # self_ip = 'localhost'
-    print(self_ip)
     return self_ip + ':' + str(args.port)
 
 
 if __name__ == '__main__':
-    args = parse_args()
-    peers_address_database = get_peers_list()
-    print(peers_address_database)
+    self_ip = requests.get('https://api.ipify.org').text
+    print(self_ip)
 
-    model = model.Model(server_address())
+    args = parse_args()
+    key_pairs_database = pickle.load(open("key_pairs", "rb"))
+    peers_data, self_peer_data, mode, bft_leader, sk = process_peer_configs()
+
+    peers_address_database = list(map(lambda x: x.address, peers_data))
+    print(peers_address_database)
 
     BUF_SIZE = 100
     server_queue = Queue(BUF_SIZE)
+    broadcast_queue = Queue(BUF_SIZE)
+    model = model.Model(self_peer_data, sk, server_queue, broadcast_queue, peers_data, mode, bft_leader)
+
     server_thread = ServerThread(args.port, server_queue)
     server_dispatcher = ServerDispatcher(server_queue, model)
 
@@ -70,7 +93,6 @@ if __name__ == '__main__':
     server_dispatcher.setDaemon(True)
     server_dispatcher.start()
 
-    broadcast_queue = Queue(BUF_SIZE)
     client_dispatcher = ClientDispatcher(broadcast_queue, model)
     client_dispatcher.setDaemon(True)
     client_dispatcher.start()
@@ -80,13 +102,21 @@ if __name__ == '__main__':
         broadcast_queue.put(advertise_event)
         advertise_event.condition.wait()
 
+    while bft_leader:
+        # msg = input("Enter message: ")
+        # if msg == '':
+        #     continue
+        # advertise_event = BroadcastEvent(PingMessage(msg))
+        #
+        # with advertise_event.condition:
+        #     broadcast_queue.put(advertise_event)
+        #     advertise_event.condition.wait()
+        if len(model.active_peers) == 3:
+            model.broadcast_pre_prepare(PrePrepareMessage("hello"))
+            sleep(5)
+            model.broadcast_pre_prepare(PrePrepareMessage("hello 2"))
+            break
+
     while True:
-        msg = input("Enter message: ")
-        if msg == '':
-            continue
-        advertise_event = BroadcastEvent(PingMessage(msg))
-
-        with advertise_event.condition:
-            broadcast_queue.put(advertise_event)
-            advertise_event.condition.wait()
-
+        print('yay')
+        sleep(5)
