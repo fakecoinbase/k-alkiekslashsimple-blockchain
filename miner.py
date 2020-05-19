@@ -2,24 +2,51 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
 
 from chain.blockchain import Blockchain
+from miningThread import MiningThread
 from util.helpers import verify_signature
 
 CHAIN_SIZE = 200
+DIFFICULTY_LEVEL = 3
 
 
 class Miner:
-    def __init__(self):
+    def __init__(self, mode='POW'):
         self.__secret_key = rsa.generate_private_key(
             public_exponent=65537,
             key_size=1028,
             backend=default_backend()
         )
+        self.mining_mode = mode
         self.public_key = self.__secret_key.public_key()
-        self.__blockchain = Blockchain(CHAIN_SIZE)
+        self.__blockchain = Blockchain(CHAIN_SIZE)  # there should be the genesis block
         self.__unconfirmed_tx_pool = []
+        self.__mining_thread = MiningThread()
 
     def verify_block(self, block):
-        return True
+        if self.__mining_thread.is_alive():
+            self.__mining_thread.stop()
+            self.__mining_thread.join()
+            self.__unconfirmed_tx_pool.remove(block.transactions)
+
+        # Step #1
+        # check the difficulty number of zeros in the block hash
+        if self.mining_mode == 'POW':
+            if block.hash_difficulty() != DIFFICULTY_LEVEL:
+                return False
+
+        # Step #2:
+        # check the referenced previous block
+        return self.__blockchain.add_block(block)
+
+    def add_transaction(self, tx):
+        if self.validate_transaction(tx):
+            self.__unconfirmed_tx_pool.append(tx)
+        if len(self.__unconfirmed_tx_pool) >= CHAIN_SIZE:
+            self.__mining_thread.set_data(self.__unconfirmed_tx_pool[0: 50],
+                                          self.__blockchain.get_head_of_chain().block.block_hash(), DIFFICULTY_LEVEL)
+            self.__mining_thread.start()
+            self.__unconfirmed_tx_pool[0:50] = []
+            self.verify_block(self.__mining_thread.get_block())
 
     def validate_transaction(self, tx):
         # Step #1:
@@ -47,5 +74,4 @@ class Miner:
         return verify_signature(public_key, signature, str(tx))
         # Step #4:
         # check double spending
-
-
+        # TODO:Double spending
