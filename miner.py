@@ -22,7 +22,7 @@ class Miner:
         self.public_key = self.__secret_key.public_key()
         genesis_block = Block(previous_hash="genesis")
         self.__blockchain = None
-        genesis_block()
+        self.genesis_block()
         self.__unconfirmed_tx_pool = []
         self.__mining_thread = MiningThread()
 

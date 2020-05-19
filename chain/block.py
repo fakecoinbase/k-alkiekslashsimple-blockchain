@@ -1,5 +1,7 @@
 import hashlib
 import datetime
+
+from miner import CHAIN_SIZE
 from util import *
 from transaction.transaction import Transaction
 from chain.errors import InvalidTransactions
@@ -28,7 +30,7 @@ class Block:
         self._previous_hash = previous_hash
         self._merkle_root = self._calculate_merkle_root()
         self._nonce = nonce
-        self._block_size = 200
+        self._block_size = CHAIN_SIZE
         self._block_hash = self._compute_hash()
 
     def _calculate_merkle_root(self):

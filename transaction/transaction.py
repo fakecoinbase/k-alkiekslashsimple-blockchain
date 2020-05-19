@@ -6,12 +6,7 @@ from util.helpers import sign
 
 class Transaction:
 
-    # this constructor is for coinbase transactions
-    def __init__(self, output):
-        self.destinations = [output]
-        self.__outputs = Utxo(self, 1)
-
-    def __init__(self, originator_pk, originator_sk, inputs, outputs, witnesses_included=True):
+    def __init__(self, outputs, originator_pk = None, originator_sk= None, inputs=None, witnesses_included=False):
         """
         Constructor for the 'Transaction' class.
         :param originator_pk: public_key.
@@ -20,6 +15,8 @@ class Transaction:
         :param inputs: UTXO(s)
         :param witnesses_included: flag.
         """
+        if inputs is None:
+            inputs = []
         self.__originator = originator_pk
         self.__sign_sk = originator_sk
         self.__inputs = inputs
@@ -32,12 +29,7 @@ class Transaction:
         self.__signature = b''
         self.__generate_outputs()
 
-    def to_dict(self, coinbase=0):
-        if coinbase:
-            return collections.OrderedDict({
-                'op_counter': 1,
-                'outputs': self.__outputs
-            })
+    def to_dict(self):
         return collections.OrderedDict({
             'originator': self.__originator,
             'witnesses_included': self.__witnesses_included,
