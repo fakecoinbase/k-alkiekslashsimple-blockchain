@@ -1,13 +1,32 @@
 peers:
-  - name: 'khaled'
+  - hostname: 'khaled'
     ip: 102.187.53.238
-    start_port: 8180
-    count: 1
+    peers:
+      - port: 8180
+        type: client
+        key-pair-id: 0
 
-  - name: 'merit'
-    ip: 41.47.158.26
-    start_port: 8180
-    count: 1
+      - port: 8181
+        type: client
+        key-pair-id: 1
+
+      - port: 8182
+        type: client
+        key-pair-id: 2
+
+      - port: 8183
+        type: miner
+        bft-leader: true
+
+#  - hostname: 'merit'
+#    ip: 41.47.158.26
+#    peers:
+#      - port: 8180
+#        type: client
+#        key-pair-id: 3
+#
+#      - port: 8181
+#        type: miner
 
 #  - name: 'hostname'
 #    ip: 255.255.255.255

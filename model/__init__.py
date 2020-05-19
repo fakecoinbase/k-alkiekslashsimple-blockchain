@@ -17,9 +17,9 @@ class Model:
     broadcast_handler: BroadcastHandler
     bft_context: BFTContext
 
-    def __init__(self, server_address, server_queue, broadcast_queue, bft_leader=False):
-        self.peer_data = PeerData(server_address, random.randint(1000000, 99999999))
-        self.server_address = server_address
+    def __init__(self, peer_data, sk, server_queue, broadcast_queue, peers_database, mode, bft_leader=False):
+        self.peer_data = peer_data
+        self.sk = sk
         self.server_queue = server_queue
         self.broadcast_queue = broadcast_queue
         self.active_peers = []

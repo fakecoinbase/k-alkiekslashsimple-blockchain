@@ -1,5 +1,5 @@
 class PeerData:
-    def __init__(self, address, pk):
+    def __init__(self, address, pk=None):
         self.address = address
         self.pk = pk
 
