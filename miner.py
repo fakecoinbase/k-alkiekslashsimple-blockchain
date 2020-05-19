@@ -4,6 +4,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from chain.block import Block
 from chain.blockchain import Blockchain
 from miningThread import MiningThread
+from transaction.transaction import Transaction
 from util.helpers import verify_signature
 
 CHAIN_SIZE = 200
@@ -20,9 +21,18 @@ class Miner:
         self.mining_mode = mode
         self.public_key = self.__secret_key.public_key()
         genesis_block = Block(previous_hash="genesis")
-        self.__blockchain = Blockchain(genesis_block)  # there should be the genesis block
+        self.__blockchain = None
+        genesis_block()
         self.__unconfirmed_tx_pool = []
         self.__mining_thread = MiningThread()
+
+    # TODO: delete this method after integration
+    def genesis_block(self):
+        transactions = []
+        for i in range(1, 51):
+            transactions.append((i, 5))
+        genesis_block = Block(transactions=transactions, previous_hash="genesis")
+        self.__blockchain = Blockchain(block=genesis_block)
 
     def verify_block(self, block):
         if self.__mining_thread.is_alive():
