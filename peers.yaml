@@ -2,14 +2,14 @@ peers:
   - name: 'khaled'
     ip: 102.187.53.238
     start_port: 8180
-    count: 4
+    count: 1
+
+  - name: 'merit'
+    ip: 41.47.158.26
+    start_port: 8180
+    count: 1
 
 #  - name: 'hostname'
 #    ip: 255.255.255.255
 #    start_port: 9980
-#    count: 5
-#
-#  - name: 'hostname'
-#    ip: 255.255.255.255
-#    start_port: 9980
-#    count: 5
+#    count: 5pth

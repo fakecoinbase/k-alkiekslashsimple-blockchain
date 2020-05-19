@@ -1,4 +1,5 @@
 from socket import socket
+from hashlib import sha256
 
 SIZE_NUM_BYTES = 4
 
@@ -27,3 +28,7 @@ def recvall(sock, n):
             return None
         data.extend(packet)
     return data
+
+
+def hash_transaction(tx):
+    return sha256(str(tx.to_dict()).encode('utf-8')).hexdigest()
