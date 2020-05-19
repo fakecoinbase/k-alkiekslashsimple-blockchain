@@ -1,6 +1,6 @@
 import hashlib
 import datetime
-from utils import *
+from util import *
 from transaction.transaction import Transaction
 from chain.errors import InvalidTransactions
 

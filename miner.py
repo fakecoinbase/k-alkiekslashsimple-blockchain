@@ -1,6 +1,7 @@
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
 
+from chain.block import Block
 from chain.blockchain import Blockchain
 from miningThread import MiningThread
 from util.helpers import verify_signature
@@ -18,7 +19,8 @@ class Miner:
         )
         self.mining_mode = mode
         self.public_key = self.__secret_key.public_key()
-        self.__blockchain = Blockchain(CHAIN_SIZE)  # there should be the genesis block
+        genesis_block = Block(previous_hash="genesis")
+        self.__blockchain = Blockchain(genesis_block)  # there should be the genesis block
         self.__unconfirmed_tx_pool = []
         self.__mining_thread = MiningThread()
 
