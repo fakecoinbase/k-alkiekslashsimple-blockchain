@@ -9,11 +9,11 @@ class Blockchain():
     depth
     """
     block_chain = []
-    # toDo set configration for each block
-    MAX_SIZE = 0  # to be set
-    DIFFICULTY = 0
+    # TODO set configration for each block
+    # MAX_SIZE = 0  # to be set
+    # DIFFICULTY = 0
 
-    #toDo don't forget to set height
+    # TODO don't forget to set height
     def __init__(self, block):
         self._block = block
 

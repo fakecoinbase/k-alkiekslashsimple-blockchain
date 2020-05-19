@@ -8,7 +8,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 
 pairs = []
 for i in range(50):
-    a = rsa.generate_private_key(public_exponent=65537,key_size=1028,backend=default_backend())
+    a = rsa.generate_private_key(public_exponent=65537,key_size=1024,backend=default_backend())
     s_pem = a.private_bytes(encoding=serialization.Encoding.PEM, format=serialization.PrivateFormat.PKCS8,encryption_algorithm=serialization.BestAvailableEncryption(b'password'))
     p_pem = a.public_key().public_bytes(encoding=serialization.Encoding.PEM, format=serialization.PublicFormat.SubjectPublicKeyInfo)
     pairs.append({'sk': s_pem, 'pk': p_pem})

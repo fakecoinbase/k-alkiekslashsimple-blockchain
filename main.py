@@ -13,6 +13,7 @@ import model
 from client.broadcast_event import BroadcastEvent
 from client.client_dispatcher import ClientDispatcher
 from model._bft.bft_state import PrePreparedState
+from model._transaction_generator import TransactionGenerator
 from server.server_dispatcher import ServerDispatcher
 from server.server_thread import ServerThread
 from util.message.advertise_self_message import AdvertiseSelfMessage
@@ -105,21 +106,25 @@ if __name__ == '__main__':
         broadcast_queue.put(advertise_event)
         advertise_event.condition.wait()
 
-    while bft_leader:
-        print("sad")
-        # msg = input("Enter message: ")
-        # if msg == '':
-        #     continue
-        # advertise_event = BroadcastEvent(PingMessage(msg))
-        #
-        # with advertise_event.condition:
-        #     broadcast_queue.put(advertise_event)
-        #     advertise_event.condition.wait()
-        if len(model.active_peers) == 3:
-            model.broadcast_pre_prepare(PrePrepareMessage("hello"))
-            sleep(5)
-            model.broadcast_pre_prepare(PrePrepareMessage("hello 2"))
-            break
+    if mode == 'client':
+        tx_gen = TransactionGenerator(model)
+        tx_gen.start()
+
+    # while bft_leader:
+    #     print("sad")
+    #     # msg = input("Enter message: ")
+    #     # if msg == '':
+    #     #     continue
+    #     # advertise_event = BroadcastEvent(PingMessage(msg))
+    #     #
+    #     # with advertise_event.condition:
+    #     #     broadcast_queue.put(advertise_event)
+    #     #     advertise_event.condition.wait()
+    #     if len(model.active_peers) == 3:
+    #         model.broadcast_pre_prepare(PrePrepareMessage("hello"))
+    #         sleep(5)
+    #         model.broadcast_pre_prepare(PrePrepareMessage("hello 2"))
+    #         break
 
     while True:
         print('yay')

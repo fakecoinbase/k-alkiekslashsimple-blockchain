@@ -1,11 +1,15 @@
 from socket import socket
 from hashlib import sha256
 from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import padding
-from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import hashes, serialization
 
 SIZE_NUM_BYTES = 4
 
+CHAIN_SIZE = 20
+DIFFICULTY_LEVEL = 3
+BASE_VALUE = 50
 
 def send_bytes(sock: socket, payload: bytes):
     size_bytes = len(payload).to_bytes(SIZE_NUM_BYTES, byteorder='big')
@@ -38,6 +42,7 @@ def hash_transaction(tx):
 
 
 def verify_signature(pk, signature, msg):
+    pk = serialization.load_pem_public_key(pk, backend=default_backend())
     try:
         pk.verify(
             signature=signature,
@@ -65,6 +70,4 @@ def sign(msg, sk):
     )
 
 
-CHAIN_SIZE = 200
-DIFFICULTY_LEVEL = 3
-BASE_VALUE = 50
+

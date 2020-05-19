@@ -1,11 +1,11 @@
 import threading
 from queue import Queue
 
-from request import Request
+from server.event import Event
 
 
 class ServerRequestHandler(threading.Thread):
-    request: Request
+    event: Event
 
     def __init__(self, request):
         threading.Thread.__init__(self)

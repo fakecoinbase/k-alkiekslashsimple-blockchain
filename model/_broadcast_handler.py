@@ -1,6 +1,7 @@
 from typing import Dict, TYPE_CHECKING
 
 from model._bft.bft_state import PrePreparedState
+from transaction.transaction import Transaction
 from util.message import bft
 from util.message.advertise_self_message import AdvertiseSelfMessage
 from util.message.ping_message import PingMessage
@@ -22,7 +23,8 @@ class BroadcastHandler:
             PingMessage: self.ping_handler,
             bft.PrePrepareMessage: self.bft_pre_prepare_handler,
             bft.PrepareMessage: self.bft_prepare_handler,
-            bft.CommitMessage: self.bft_commit_handler
+            bft.CommitMessage: self.bft_commit_handler,
+            Transaction: self.new_transaction_handler
         }
 
     def handle(self, message, responses):
@@ -49,3 +51,6 @@ class BroadcastHandler:
 
     def bft_commit_handler(self, responses: Dict[str, SuccessResponse]):
         pass
+
+    def new_transaction_handler(self, responses: Dict[str, SuccessResponse]):
+        print("transaction responses:", responses)

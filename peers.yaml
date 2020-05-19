@@ -3,8 +3,8 @@ peers:
     ip: 102.187.53.238
     peers:
       - port: 8180
-        type: client
-        key-pair-id: 0
+        type: miner
+        bft-leader: true
 
       - port: 8181
         type: client
@@ -15,8 +15,8 @@ peers:
         key-pair-id: 2
 
       - port: 8183
-        type: miner
-        bft-leader: true
+        type: client
+        key-pair-id: 2
 
 #  - hostname: 'merit'
 #    ip: 41.47.158.26

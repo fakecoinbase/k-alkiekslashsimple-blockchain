@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING
 
+from transaction.transaction import Transaction
 from util.message import bft
 from util.message.advertise_self_message import AdvertiseSelfMessage
 from util.message.bft import PrePrepareMessage, PrepareMessage, CommitMessage
@@ -21,7 +22,8 @@ class ServerHandler:
             PingMessage: self.ping_handler,
             bft.PrePrepareMessage: self.bft_pre_prepare_handler,
             bft.PrepareMessage: self.bft_prepare_handler,
-            bft.CommitMessage: self.bft_commit_handler
+            bft.CommitMessage: self.bft_commit_handler,
+            Transaction: self.transaction_handler
         }
 
     def handle(self, message):
@@ -36,7 +38,7 @@ class ServerHandler:
 
     def ping_handler(self, message: PingMessage):
         print(message.msg)
-        return PingMessage('received by: ' + self.model.server_address)
+        return PingMessage('received by: ' + self.model.peer_data.address)
 
     def bft_pre_prepare_handler(self, message: PrePrepareMessage):
         self.model.bft_context.pre_prepare(message)
@@ -49,3 +51,11 @@ class ServerHandler:
     def bft_commit_handler(self, message: CommitMessage):
         self.model.bft_context.commit(message)
         return SuccessResponse()
+
+    def transaction_handler(self, message: Transaction):
+        print(message)
+        if self.model.mode == 'miner':
+            print(message.to_dict())
+            self.model.add_transaction(message)
+        return SuccessResponse()
+

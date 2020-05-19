@@ -13,6 +13,7 @@ from model._bft.bft_state import PrePreparedState
 from model._broadcast_handler import BroadcastHandler
 from model._server_handler import ServerHandler
 from transaction.transaction import Transaction
+from transaction.utxo import Utxo
 from util.helpers import BASE_VALUE, DIFFICULTY_LEVEL, verify_signature, hash_transaction, sign, CHAIN_SIZE
 from util.message.bft import PrePrepareMessage, PrepareMessage, CommitMessage
 from util.peer_data import PeerData
@@ -44,8 +45,8 @@ class Model:
             self.__unconfirmed_tx_pool = []
             self.__mining_thread = MiningThread()
         self.__blockchain = None
-        self.genesis_block()
         self.mode = mode
+        self.genesis_block()
 
     def handle_broadcast_responses(self, message, responses):
         return self.broadcast_handler.handle(message, responses)
@@ -75,30 +76,28 @@ class Model:
     def genesis_block(self):
         transactions = []
         for peer in self.peers_database:
-            if peer.get_pk() is not None:
-                transactions.append(Transaction(outputs=[(peer.get_pk(), BASE_VALUE)]))
+            if peer.pk is not None:
+                transactions.append(Transaction(outputs=[(peer.pk, BASE_VALUE)]))
 
         if self.mode == 'client':
-            self.__wallet.append(Transaction(outputs=[(self.pk, BASE_VALUE)]).get_outputs())
-        genesis_block = Block(transactions=transactions, previous_hash="genesis")
+            self.__wallet.append(Transaction(outputs=[(self.peer_data.pk, BASE_VALUE)]).get_outputs()[0])
+        genesis_block = Block(transactions=transactions, previous_hash="genesis", height=0)
         self.__blockchain = Blockchain(block=genesis_block)
 
     # TODO: transaction generation mechanism
     # Client
-    def generate_tx(self, outputs, prev_tx_hash, output_index):
-        for utxo in self.__wallet:
-            if utxo.get_transaction_hash() == prev_tx_hash and utxo.get_index() == output_index:
-                utxo.sign(self.sk)
-                tx = Transaction(peer_data=self.peer_data, inputs=[utxo],
-                                 outputs=outputs, witnesses_included=True)
-                msg = str(tx.to_dict())
-                signature = sign(msg, self.sk)
-                tx.sign_transaction(signature)
-                return tx
+    def generate_tx(self, outputs, utxo):
+        utxo.sign(self.sk)
+        tx = Transaction(peer_data=self.peer_data, inputs=[utxo],
+                         outputs=outputs, witnesses_included=True)
+        msg = str(tx.to_dict())
+        signature = sign(msg, self.sk)
+        tx.sign_transaction(signature)
+        return tx
 
     # TODO: delete this method after integration
     # Client
-    def get_random_input(self):
+    def get_random_input(self) -> Utxo:
         return random.choice(self.__wallet)
 
     # Client
@@ -146,7 +145,8 @@ class Model:
         # Step #1:
         # make sure that the originator is the actual recipient of the input utxos
         signature = tx.get_signature()
-        public_key = tx.get_peer_data().get_pk()
+        public_key = tx.get_peer_data().pk
+        tx_original = tx
         tx = tx.to_dict()
         used_value = 0
         for ip in tx['inputs']:
@@ -166,7 +166,7 @@ class Model:
         # Step #3:
         # check double spending
         # TODO:Double spending Test
-        if self.__blockchain.get_block_of_transaction(hash_transaction(tx)) is not None:
+        if self.__blockchain.get_block_of_transaction(hash_transaction(tx_original )) is not None:
             print("Double Spending rejected.")
             return False
         # Step #4:
