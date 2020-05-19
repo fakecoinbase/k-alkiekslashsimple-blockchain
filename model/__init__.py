@@ -166,6 +166,7 @@ class Model:
         # check double spending
         # TODO:Double spending Test
         if self.__blockchain.get_block_of_transaction(hash_transaction(tx)) is not None:
+            print("Double Spending rejected.")
             return False
         # Step #4:
         # validate the signature of the originator
