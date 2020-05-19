@@ -137,7 +137,8 @@ class Model:
             self.__mining_thread.set_data(self.__unconfirmed_tx_pool[0: CHAIN_SIZE],
                                           self.__blockchain.get_head_of_chain().block.block_hash(), DIFFICULTY_LEVEL)
             self.__mining_thread.start()
-            self.__unconfirmed_tx_pool[0:50] = []
+            self.__unconfirmed_tx_pool[0:CHAIN_SIZE] = []
+            self.__unconfirmed_tx_pool[0:CHAIN_SIZE] = []
             self.verify_block(self.__mining_thread.get_block())
 
     # Miner
