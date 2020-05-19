@@ -5,10 +5,7 @@ from chain.block import Block
 from chain.blockchain import Blockchain
 from miningThread import MiningThread
 from transaction.transaction import Transaction
-from util.helpers import verify_signature
-
-CHAIN_SIZE = 200
-DIFFICULTY_LEVEL = 3
+from util.helpers import verify_signature, CHAIN_SIZE, DIFFICULTY_LEVEL, BASE_VALUE, hash_transaction
 
 
 class Miner:
@@ -20,17 +17,16 @@ class Miner:
         )
         self.mining_mode = mode
         self.public_key = self.__secret_key.public_key()
-        genesis_block = Block(previous_hash="genesis")
         self.__blockchain = None
         self.genesis_block()
         self.__unconfirmed_tx_pool = []
         self.__mining_thread = MiningThread()
 
-    # TODO: delete this method after integration
+    # TODO: Change the hardcoded pk with the actual models pk
     def genesis_block(self):
         transactions = []
         for i in range(1, 51):
-            transactions.append((i, 5))
+            transactions.append(Transaction(outputs=[(i, BASE_VALUE)]))
         genesis_block = Block(transactions=transactions, previous_hash="genesis")
         self.__blockchain = Blockchain(block=genesis_block)
 
@@ -53,7 +49,7 @@ class Miner:
     def add_transaction(self, tx):
         if self.validate_transaction(tx):
             self.__unconfirmed_tx_pool.append(tx)
-        if len(self.__unconfirmed_tx_pool) >= CHAIN_SIZE:
+        if len(self.__unconfirmed_tx_pool) >= CHAIN_SIZE and not self.is_mining():
             self.__mining_thread.set_data(self.__unconfirmed_tx_pool[0: 50],
                                           self.__blockchain.get_head_of_chain().block.block_hash(), DIFFICULTY_LEVEL)
             self.__mining_thread.start()
@@ -82,8 +78,14 @@ class Miner:
             print("Overspending rejected.")
             return False
         # Step #3:
-        # validate the signature of the originator
-        return verify_signature(public_key, signature, str(tx))
-        # Step #4:
         # check double spending
         # TODO:Double spending
+        if self.__blockchain.get_block_of_transaction(hash_transaction(tx)) is not None:
+            return False
+        # Step #4:
+        # validate the signature of the originator
+        return verify_signature(public_key, signature, str(tx))
+
+
+    def is_mining(self):
+        return self.__mining_thread.is_alive()

@@ -63,3 +63,8 @@ def sign(msg, sk):
         ),
         algorithm=hashes.SHA256()
     )
+
+
+CHAIN_SIZE = 5
+DIFFICULTY_LEVEL = 3
+BASE_VALUE = 50
