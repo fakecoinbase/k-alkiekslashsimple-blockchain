@@ -4,11 +4,16 @@ from typing import List
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 
+from chain.block import Block
+from chain.blockchain import Blockchain
 from client.broadcast_event import BroadcastEvent
+from miningThread import MiningThread
 from model._bft.bft_context import BFTContext
 from model._bft.bft_state import PrePreparedState
 from model._broadcast_handler import BroadcastHandler
 from model._server_handler import ServerHandler
+from transaction.transaction import Transaction
+from util.helpers import BASE_VALUE, DIFFICULTY_LEVEL, verify_signature, hash_transaction, sign, CHAIN_SIZE
 from util.message.bft import PrePrepareMessage, PrepareMessage, CommitMessage
 from util.peer_data import PeerData
 
@@ -19,8 +24,11 @@ class Model:
     server_handler: ServerHandler
     broadcast_handler: BroadcastHandler
     bft_context: BFTContext
+    peers_database: List[PeerData]
 
-    def __init__(self, peer_data, sk, server_queue, broadcast_queue, peers_database, mode, bft_leader=False):
+    def __init__(self, peer_data, sk, server_queue, broadcast_queue, peers_database, mode, bft_leader=False, mining_mode='pow'):
+        self.mining_mode = mining_mode
+        self.peers_database = peers_database
         self.peer_data = peer_data
         self.server_queue = server_queue
         self.broadcast_queue = broadcast_queue
@@ -31,6 +39,13 @@ class Model:
         if mode == 'client':
             self.sk = sk
             self.pk = serialization.load_pem_public_key(peer_data.pk, backend=default_backend())
+            self.__wallet = []
+        elif mode == 'miner':
+            self.__unconfirmed_tx_pool = []
+            self.__mining_thread = MiningThread()
+        self.__blockchain = None
+        self.genesis_block()
+        self.mode = mode
 
     def handle_broadcast_responses(self, message, responses):
         return self.broadcast_handler.handle(message, responses)
@@ -55,3 +70,107 @@ class Model:
         commit_event = BroadcastEvent(message)
         self.broadcast_queue.put(commit_event)
 
+    # TODO: Change the hardcoded pk with the actual models pk Test
+    # Miner and Client
+    def genesis_block(self):
+        transactions = []
+        for peer in self.peers_database:
+            if peer.get_pk() is not None:
+                transactions.append(Transaction(outputs=[(peer.get_pk(), BASE_VALUE)]))
+
+        if self.mode == 'client':
+            self.__wallet.append(Transaction(outputs=[(self.pk, BASE_VALUE)]).get_outputs())
+        genesis_block = Block(transactions=transactions, previous_hash="genesis")
+        self.__blockchain = Blockchain(block=genesis_block)
+
+    # TODO: transaction generation mechanism
+    # Client
+    def generate_tx(self, outputs, prev_tx_hash, output_index):
+        for utxo in self.__wallet:
+            if utxo.get_transaction_hash() == prev_tx_hash and utxo.get_index() == output_index:
+                utxo.sign(self.sk)
+                tx = Transaction(peer_data=self.peer_data, inputs=[utxo],
+                                 outputs=outputs, witnesses_included=True)
+                msg = str(tx.to_dict())
+                signature = sign(msg, self.sk)
+                tx.sign_transaction(signature)
+                return tx
+
+    # TODO: delete this method after integration
+    # Client
+    def get_random_input(self):
+        return random.choice(self.__wallet)
+
+    # Client
+    def get_wallet(self):
+        return self.__wallet
+
+    # Miner
+    def maybe_store_output(self, block):
+        for tx in block.transactions():
+            for op in tx.get_outputs():
+                if op.get_recipient_pk() == self.pk:
+                    self.__wallet.append(op)
+
+    # Miner and Client
+    def verify_block(self, block):
+        if self.mode == 'miner':
+            if self.__mining_thread.is_alive():
+                self.__mining_thread.stop()
+                self.__mining_thread.join()
+                self.__unconfirmed_tx_pool.remove(block.transactions)
+        # Step #1
+        # check the difficulty number of zeros in the block hash
+        if self.mining_mode == 'pow':
+            if block.hash_difficulty() != DIFFICULTY_LEVEL:
+                return False
+
+        # Step #2:
+        # check the referenced previous block
+        return self.__blockchain.add_block(block)
+
+    # Miner
+    def add_transaction(self, tx):
+        if self.validate_transaction(tx):
+            self.__unconfirmed_tx_pool.append(tx)
+        if len(self.__unconfirmed_tx_pool) >= CHAIN_SIZE and not self.is_mining():
+            self.__mining_thread.set_data(self.__unconfirmed_tx_pool[0: CHAIN_SIZE],
+                                          self.__blockchain.get_head_of_chain().block.block_hash(), DIFFICULTY_LEVEL)
+            self.__mining_thread.start()
+            self.__unconfirmed_tx_pool[0:50] = []
+            self.verify_block(self.__mining_thread.get_block())
+
+    # Miner
+    def validate_transaction(self, tx):
+        # Step #1:
+        # make sure that the originator is the actual recipient of the input utxos
+        signature = tx.get_signature()
+        public_key = tx.get_peer_data().get_pk()
+        tx = tx.to_dict()
+        used_value = 0
+        for ip in tx['inputs']:
+            used_value += ip.get_value()
+            if not ip.verify():
+                print("Invalid input.")
+                return False
+        # Step #2:
+        # check overspending
+        transferred_value = 0
+        for op in tx['outputs']:
+            if op.get_recipient_pk() != public_key:
+                transferred_value += op.get_value()
+        if transferred_value > used_value:
+            print("Overspending rejected.")
+            return False
+        # Step #3:
+        # check double spending
+        # TODO:Double spending Test
+        if self.__blockchain.get_block_of_transaction(hash_transaction(tx)) is not None:
+            return False
+        # Step #4:
+        # validate the signature of the originator
+        return verify_signature(public_key, signature, str(tx))
+
+    # Miner
+    def is_mining(self):
+        return self.__mining_thread.is_alive()

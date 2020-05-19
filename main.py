@@ -41,6 +41,7 @@ def process_peer_configs():
         peer_dicts = peers_yaml['peers']
 
     peers_list = []
+    all_peers_list = []
     found_self = False
     for peer_dict in peer_dicts:
         ip = peer_dict['ip']
@@ -59,10 +60,12 @@ def process_peer_configs():
                 else:
                     my_sk = None
                 self_mode = peer_info['type']
+                all_peers_list.append(peer_data)
                 continue
             peers_list.append(peer_data)
+            all_peers_list.append(peer_data)
 
-    return peers_list, my_self_peer_data, self_mode, my_bft_leader, my_sk
+    return peers_list, my_self_peer_data, self_mode, my_bft_leader, my_sk, all_peers_list
 
 
 def server_address():
@@ -75,7 +78,7 @@ if __name__ == '__main__':
 
     args = parse_args()
     key_pairs_database = pickle.load(open("key_pairs", "rb"))
-    peers_data, self_peer_data, mode, bft_leader, sk = process_peer_configs()
+    peers_data, self_peer_data, mode, bft_leader, sk, all_peers_data = process_peer_configs()
 
     peers_address_database = list(map(lambda x: x.address, peers_data))
     print(peers_address_database)
@@ -83,7 +86,7 @@ if __name__ == '__main__':
     BUF_SIZE = 100
     server_queue = Queue(BUF_SIZE)
     broadcast_queue = Queue(BUF_SIZE)
-    model = model.Model(self_peer_data, sk, server_queue, broadcast_queue, peers_data, mode, bft_leader)
+    model = model.Model(self_peer_data, sk, server_queue, broadcast_queue, all_peers_data, mode, bft_leader, args.algorithm)
 
     server_thread = ServerThread(args.port, server_queue)
     server_dispatcher = ServerDispatcher(server_queue, model)

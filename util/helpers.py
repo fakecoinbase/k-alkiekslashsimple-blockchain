@@ -65,6 +65,6 @@ def sign(msg, sk):
     )
 
 
-CHAIN_SIZE = 5
+CHAIN_SIZE = 200
 DIFFICULTY_LEVEL = 3
 BASE_VALUE = 50

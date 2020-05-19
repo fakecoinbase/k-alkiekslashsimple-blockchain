@@ -86,6 +86,5 @@ class Miner:
         # validate the signature of the originator
         return verify_signature(public_key, signature, str(tx))
 
-
     def is_mining(self):
         return self.__mining_thread.is_alive()

@@ -36,6 +36,12 @@ class MyTestCase(unittest.TestCase):
         miner_node.add_transaction(tx5)
         self.assertTrue(miner_node.is_mining())
 
+    def test_mining_one_block_multiple_miners(self):
+        self.fail()
+
+    def test_mining_multiple_blocks_multiple_miners(self):
+        self.fail()
+
     def test_double_spending(self):
         self.fail()
 
