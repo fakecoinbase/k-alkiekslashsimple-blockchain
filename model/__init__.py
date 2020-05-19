@@ -1,6 +1,9 @@
 import random
 from typing import List
 
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
+
 from client.broadcast_event import BroadcastEvent
 from model._bft.bft_context import BFTContext
 from model._bft.bft_state import PrePreparedState
@@ -19,13 +22,15 @@ class Model:
 
     def __init__(self, peer_data, sk, server_queue, broadcast_queue, peers_database, mode, bft_leader=False):
         self.peer_data = peer_data
-        self.sk = sk
         self.server_queue = server_queue
         self.broadcast_queue = broadcast_queue
         self.active_peers = []
         self.server_handler = ServerHandler(self)
         self.broadcast_handler = BroadcastHandler(self)
         self.bft_context = BFTContext(self.active_peers, self, bft_leader)
+        if mode == 'client':
+            self.sk = sk
+            self.pk = serialization.load_pem_public_key(peer_data.pk, backend=default_backend())
 
     def handle_broadcast_responses(self, message, responses):
         return self.broadcast_handler.handle(message, responses)

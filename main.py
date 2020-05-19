@@ -51,7 +51,7 @@ def process_peer_configs():
             if peer_info['port'] == args.port and ip == self_ip:  # This is me!
                 found_self = True
                 my_self_peer_data = peer_data
-                my_bft_leader = 'bft_leader' in peer_info and peer_info['bft-leader'] == 'true'
+                my_bft_leader = 'bft-leader' in peer_info and peer_info['bft-leader']
 
                 if peer_info['type'] == 'client':
                     skb = key_pairs_database[peer_info['key-pair-id']]['sk']
@@ -103,6 +103,7 @@ if __name__ == '__main__':
         advertise_event.condition.wait()
 
     while bft_leader:
+        print("sad")
         # msg = input("Enter message: ")
         # if msg == '':
         #     continue
