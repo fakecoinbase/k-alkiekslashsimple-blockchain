@@ -1,6 +1,8 @@
 import hashlib
 import datetime
-from utils import *
+
+from util.helpers import CHAIN_SIZE
+from util import *
 from transaction.transaction import Transaction
 from chain.errors import InvalidTransactions
 import util.helpers as helper
@@ -29,7 +31,7 @@ class Block:
         self._previous_hash = previous_hash
         self._merkle_root = self._calculate_merkle_root()
         self._nonce = nonce
-        self._block_size = 200
+        self._block_size = CHAIN_SIZE
         self._block_hash = self._compute_hash()
 
     def _calculate_merkle_root(self):
@@ -41,11 +43,11 @@ class Block:
             for i in range(0, len(merkle_base), 2):
                 if i == len(merkle_base) - 1:  # to hundle not power of two number of transactions
                     temp_merkle_base.append(
-                        hashlib.sha256(merkle_base[i]).hexdigest()
+                        hashlib.sha256(merkle_base[i].encode('utf-8')).hexdigest()
                     )
                 else:
                     temp_merkle_base.append(
-                        hashlib.sha256(merkle_base[i] + merkle_base[i + 1]).hexdigest()
+                        hashlib.sha256(merkle_base[i].encode('utf-8') + merkle_base[i + 1].encode('utf-8')).hexdigest()
                     )
             merkle_base = temp_merkle_base
         return merkle_base[0]
@@ -77,10 +79,10 @@ class Block:
     def _compute_hash(self):
         h = hashlib.sha256()
         h.update(
-            str(self.nonce).encode('utf-8') +
+            str(self._nonce).encode('utf-8') +
             str(self.merkle_root).encode('utf-8') +
             str(self.previous_hash).encode('utf-8') +
-            str(self.timestamp).encode('utf-8')
+            str(self._time_stamp).encode('utf-8')
         )
         return h.hexdigest()
 

@@ -1,15 +1,12 @@
 import datetime
 import collections
-
-from cryptography.hazmat.primitives.asymmetric import padding
-from cryptography.hazmat.primitives import hashes
-
 from transaction.utxo import Utxo
+from util.helpers import sign
 
 
 class Transaction:
 
-    def __init__(self, originator_pk, originator_sk, inputs, outputs, witnesses_included=True):
+    def __init__(self, outputs, originator_pk = None, originator_sk= None, inputs=None, witnesses_included=False):
         """
         Constructor for the 'Transaction' class.
         :param originator_pk: public_key.
@@ -18,6 +15,8 @@ class Transaction:
         :param inputs: UTXO(s)
         :param witnesses_included: flag.
         """
+        if inputs is None:
+            inputs = []
         self.__originator = originator_pk
         self.__sign_sk = originator_sk
         self.__inputs = inputs
@@ -43,14 +42,7 @@ class Transaction:
         })
 
     def sign_transaction(self):
-        self.__signature = self.__sign_sk.sign(
-            data=str(self.to_dict()).encode('utf-8'),
-            padding=padding.PSS(
-                mgf=padding.MGF1(hashes.SHA256()),
-                salt_length=padding.PSS.MAX_LENGTH
-            ),
-            algorithm=hashes.SHA256()
-        )
+        self.__signature = sign(str(self.to_dict()), self.__sign_sk)
 
     def get_signature(self):
         return self.__signature
@@ -66,11 +58,10 @@ class Transaction:
     def get_timestamp(self):
         return self.__timestamp
 
-    # TODO: delete this method after integration
     def get_outputs(self):
         return self.__outputs
 
     def __set_witnesses(self):
         for ip in self.__inputs:
-            self.__witnesses.append(ip.get_transaction_hash())
+            self.__witnesses.append(ip.get_signature())
 
