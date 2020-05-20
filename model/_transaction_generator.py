@@ -4,6 +4,7 @@ from time import sleep
 from typing import TYPE_CHECKING
 
 from client.broadcast_event import BroadcastEvent
+from transaction.transaction import Transaction
 
 if TYPE_CHECKING:
     from model import Model
@@ -20,8 +21,9 @@ class TransactionGenerator(threading.Thread):
             self.broadcast_transaction(tx)
             sleep(2)
 
-    def broadcast_transaction(self, tx):
+    def broadcast_transaction(self, tx: Transaction):
         tx_event = BroadcastEvent(tx)
+        # print(tx.get_peer_data().pk)
         self.model.broadcast_queue.put(tx_event)
 
     def generate_random_tx(self):
