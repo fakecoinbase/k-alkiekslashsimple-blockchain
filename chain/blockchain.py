@@ -38,7 +38,6 @@ class Blockchain():
             new_chain = Blockchain(block)
             new_chain.block.block_height = self.block.block_height + 1
             self.block_chain.append(new_chain)
-            print(str(block))
 
             return True
         for child in self.block_chain:

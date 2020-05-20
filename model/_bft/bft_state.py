@@ -3,6 +3,8 @@ from collections import Counter
 
 from typing import TYPE_CHECKING
 
+from chain.block import Block
+from chain.blockchain import Blockchain
 from util.message.bft import PrepareMessage, CommitMessage
 
 if TYPE_CHECKING:
@@ -28,22 +30,41 @@ class BFTState(ABC):
     def commit(self, message):
         pass
 
+    def verify_block(self, blockchain: Blockchain, block: Block):
+        if blockchain.block.block_hash == block.previous_hash:
+            return True
+        for child in blockchain.block_chain:
+            if self.verify_block(child, block):
+                return True
+        return False
+
 
 class IdleState(BFTState):
     context: 'BFTContext'
 
+    def __init__(self, context):
+        super().__init__(context)
+        self.context.pre_prepare_message = None
+        self.context.prepare_messages = []
+        self.context.commit_messages = []
+
     def pre_prepare(self, message):
+        if self.context.leader:
+            print("Invalid pre-prepare message")
+            return
+        if not self.verify_block(self.context.model.blockchain, message.block):
+            return
         self.context.pre_prepare_message = message
         self.context.prepare_messages = []
+        self.context.commit_messages = []
         self.context.transition_to(PrePreparedState)
-        # TODO: verify block message
         self.context.model.broadcast_prepare(PrepareMessage(message.block))
 
     def prepare(self, message):
-        print ("Invalid prepare message")
+        print("Invalid prepare message")
 
     def commit(self, message):
-        print ("Invalid commit message")
+        print("Invalid commit message")
 
 
 class PrePreparedState(BFTState):
@@ -52,12 +73,17 @@ class PrePreparedState(BFTState):
     def __init__(self, context):
         super().__init__(context)
         self.context.prepare_messages = []
+        self.faults = 0
 
     def pre_prepare(self, message):
         raise UnsupportedStateAction
 
     def prepare(self, message):
-        # TODO: verify prepare message
+        if not self.verify_block(self.context.model.blockchain, message.block):
+            self.faults += 1
+            if self.faults > self.context.tolerated_faults:
+                self.context.transition_to(IdleState)
+
         self.context.prepare_messages.append(message)
         if self.context.leader and len(self.context.prepare_messages) >= self.context.tolerated_faults + 1:
             self.context.transition_to(PreparedState)
@@ -76,8 +102,8 @@ class PreparedState(BFTState):
     def __init__(self, context):
         super().__init__(context)
         if len(self.context.commit_messages) >= self.context.tolerated_faults + 1:
-            self.context.transition_to(IdleState)
             self.persist()
+            self.context.transition_to(IdleState)
 
     def pre_prepare(self, message):
         raise UnsupportedStateAction
@@ -88,18 +114,24 @@ class PreparedState(BFTState):
     def commit(self, message):
         self.context.commit_messages.append(message)
         if len(self.context.commit_messages) >= self.context.tolerated_faults + 1:
-            self.context.transition_to(IdleState)
             self.persist()
+            self.context.transition_to(IdleState)
 
     def persist(self):
-        voted = self._majority_vote()
-        print("=========================> Majority vote:", voted)
+        voted_block = self._majority_vote()
+        print("=========================> Majority vote:")
+        print(str(voted_block))
+        self.context.model.blockchain.add_block(voted_block)
+        if self.context.model.mode == 'client':
+            self.context.model.maybe_store_output(voted_block)
 
     def _majority_vote(self):
         blocks = [self.context.pre_prepare_message.block]
         blocks.extend(map(lambda x: x.block, self.context.prepare_messages))
-        value, _ = Counter(blocks).most_common()[0]
-        return value
+        block_hashes = list(map(lambda x: x.block_hash, blocks))
+        most_common_hash, _ = Counter(block_hashes).most_common()[0]
+        idx = block_hashes.index(most_common_hash)
+        return blocks[idx]
 
 
 class UnsupportedStateAction(Exception):

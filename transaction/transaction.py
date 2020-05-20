@@ -5,7 +5,7 @@ from transaction.utxo import Utxo
 
 class Transaction:
 
-    def __init__(self, outputs, peer_data=None, inputs=None, witnesses_included=False):
+    def __init__(self, outputs, peer_data=None, inputs=None, witnesses_included=False, timestamp=None):
         """
         Constructor for the 'Transaction' class.
         :param originator_pk: public_key.
@@ -17,7 +17,10 @@ class Transaction:
             inputs = []
         self.__peer_data = peer_data
         self.__inputs = inputs
-        self.__timestamp = datetime.datetime.now()
+        if timestamp is None:
+            self.__timestamp = datetime.datetime.now()
+        else:
+            self.__timestamp = timestamp
         self.__witnesses_included = witnesses_included
         self.__witnesses = []
         if self.__witnesses_included:
@@ -31,9 +34,9 @@ class Transaction:
             'witnesses_included': self.__witnesses_included,
             'witnesses': self.__witnesses,
             'ip_counter': len(self.__inputs),
-            'inputs': self.__inputs,
+            'inputs': list(map(lambda x: x.to_dict(), self.__inputs)),
             'op_counter': len(self.__outputs),
-            'outputs': self.__outputs,
+            'outputs': list(map(lambda x: x.to_dict(), self.__outputs)),
             'time': self.__timestamp
         })
 
@@ -56,6 +59,9 @@ class Transaction:
 
     def get_outputs(self):
         return self.__outputs
+
+    def get_inputs(self):
+        return self.__inputs
 
     def __set_witnesses(self):
         for ip in self.__inputs:

@@ -3,13 +3,12 @@ from typing import List
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
-
 from chain.block import Block
 from chain.blockchain import Blockchain
 from client.broadcast_event import BroadcastEvent
 from miningThread import MiningThread
 from model._bft.bft_context import BFTContext
-from model._bft.bft_state import PrePreparedState
+from model._bft.bft_state import PrePreparedState, IdleState
 from model._broadcast_handler import BroadcastHandler
 from model._server_handler import ServerHandler
 from transaction.transaction import Transaction
@@ -82,11 +81,11 @@ class Model:
         transactions = []
         for peer in self.peers_database:
             if peer.pk is not None:
-                transactions.append(Transaction(outputs=[(peer.pk, BASE_VALUE)]))
+                transactions.append(Transaction(outputs=[(peer.pk, BASE_VALUE)], timestamp=0))
 
         if self.mode == 'client':
             self.__wallet.append(Transaction(outputs=[(self.peer_data.pk, BASE_VALUE)]).get_outputs()[0])
-        genesis_block = Block(transactions=transactions, previous_hash="genesis", height=0)
+        genesis_block = Block(transactions=transactions, previous_hash="genesis", height=0, timestamp=0)
         self.blockchain = Blockchain(block=genesis_block)
 
     # TODO: transaction generation mechanism
@@ -111,10 +110,12 @@ class Model:
 
     # Miner
     def maybe_store_output(self, block):
-        for tx in block.transactions():
+        for tx in block.transactions:
             for op in tx.get_outputs():
                 if op.get_recipient_pk() == self.peer_data.pk:
                     self.__wallet.append(op)
+                    print("--- got a utxo in my wallet 😎😎 ---")
+
 
     # Miner and Client
     def verify_and_add_block(self, block):
@@ -140,9 +141,21 @@ class Model:
         if self.validate_transaction(tx):
             self.unconfirmed_tx_pool.append(tx)
 
-        if len(self.unconfirmed_tx_pool) >= CHAIN_SIZE and (self.__mining_thread is None or not self.is_mining()):
-            self.__mining_thread = MiningThread(self)
-            self.__mining_thread.start()
+        if self.mining_mode == 'pow':
+            if len(self.unconfirmed_tx_pool) >= CHAIN_SIZE and (self.__mining_thread is None or not self.is_mining()):
+                self.__mining_thread = MiningThread(self)
+                self.__mining_thread.start()
+        elif self.mining_mode == 'bft':
+            if len(self.unconfirmed_tx_pool) >= CHAIN_SIZE and self.bft_context.leader and self.bft_context.state.__class__ == IdleState:
+                transactions = self.unconfirmed_tx_pool[0:CHAIN_SIZE]
+                self.unconfirmed_tx_pool[0:CHAIN_SIZE] = []
+
+                prev_hash = self.blockchain.get_head_of_chain().block.block_hash
+                block = Block(transactions=transactions, previous_hash=prev_hash, nonce=0)
+                self.bft_context.pre_prepare_message = block
+                self.bft_context.transition_to(PrePreparedState)
+                self.broadcast_pre_prepare(PrePrepareMessage(block))
+
         #     self.__mining_thread.set_data(self.unconfirmed_tx_pool[0: CHAIN_SIZE],
         #                                   self.blockchain.get_head_of_chain().block.block_hash, DIFFICULTY_LEVEL)
         #     self.__mining_thread.start()
@@ -159,7 +172,7 @@ class Model:
         tx_original = tx
         tx = tx.to_dict()
         used_value = 0
-        for ip in tx['inputs']:
+        for ip in tx_original.get_inputs():
             used_value += ip.get_value()
             if not ip.verify():
                 print("Invalid input.")
@@ -167,7 +180,7 @@ class Model:
         # Step #2:
         # check overspending
         transferred_value = 0
-        for op in tx['outputs']:
+        for op in tx_original.get_outputs():
             if op.get_recipient_pk() != public_key:
                 transferred_value += op.get_value()
         if transferred_value > used_value:

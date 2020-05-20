@@ -52,5 +52,6 @@ class MiningThread(threading.Thread):
             self.__model.unconfirmed_tx_pool[0:CHAIN_SIZE] = []
             self.__model.blockchain.add_block(block)
             self.__model.broadcast_new_block(block)
+            print(str(block))
             # TODO: broadcast new block
             # self.__model.verify_block(block)

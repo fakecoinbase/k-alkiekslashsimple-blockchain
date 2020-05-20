@@ -31,6 +31,9 @@ class Utxo:
             'value': self.__value
         })
 
+    def to_dict(self):
+        return self.__to_dict()
+
     def sign(self, sk):
         self.__signature = sign(str(self.__to_dict()), sk)
 

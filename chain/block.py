@@ -141,3 +141,4 @@ class Block:
             self._nonce) + "\n prevHash: " + self._previous_hash + "\n Merkle root: " + self.merkle_root \
              + "\n--------------"
         return s
+
