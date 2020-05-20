@@ -134,9 +134,9 @@ class Model:
             self.__unconfirmed_tx_pool.append(tx)
         if len(self.__unconfirmed_tx_pool) >= CHAIN_SIZE and not self.is_mining():
             self.__mining_thread.set_data(self.__unconfirmed_tx_pool[0: CHAIN_SIZE],
-                                          self.__blockchain.get_head_of_chain().block.block_hash(), DIFFICULTY_LEVEL)
+                                          self.__blockchain.get_head_of_chain().block.block_hash, DIFFICULTY_LEVEL)
             self.__mining_thread.start()
-            self.__unconfirmed_tx_pool[0:CHAIN_SIZE] = []
+            self.__mining_thread.join()     # TODO: don't wait for pow
             self.__unconfirmed_tx_pool[0:CHAIN_SIZE] = []
             self.verify_block(self.__mining_thread.get_block())
 
@@ -166,12 +166,11 @@ class Model:
         # Step #3:
         # check double spending
         # TODO:Double spending Test
-        if self.__blockchain.get_block_of_transaction(hash_transaction(tx_original )) is not None:
+        if self.__blockchain.get_block_of_transaction(hash_transaction(tx_original)) is not None:
             print("Double Spending rejected.")
             return False
-        # Step #4:
-        # validate the signature of the originator
-        return verify_signature(public_key, signature, str(tx))
+        print("============ VALID ===============")
+        return True
 
     # Miner
     def is_mining(self):
