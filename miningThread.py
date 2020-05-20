@@ -1,25 +1,31 @@
 import threading
+from typing import TYPE_CHECKING
 
 from chain.block import Block
+from util.helpers import CHAIN_SIZE, DIFFICULTY_LEVEL
+
+if TYPE_CHECKING:
+    from model import Model
 
 
 class MiningThread(threading.Thread):
 
-    def __init__(self):
+    def __init__(self, model: 'Model'):
         super(MiningThread, self).__init__()
+        self.__model = model
         self.__stop_event = threading.Event()
         self.__transactions = []
         self.__prev_hash = ""
-        self.__diff = 0
-        self.__block = None
+        self.__diff = DIFFICULTY_LEVEL
+        # self.__block = None
 
-    def set_data(self, transactions, prev_block_hash, difficulty):
-        self.__transactions = transactions
-        self.__prev_hash = prev_block_hash
-        self.__diff = difficulty
+    # def set_data(self, transactions, prev_block_hash, difficulty):
+    #     self.__transactions = transactions
+    #     self.__prev_hash = prev_block_hash
+    #     self.__diff = difficulty
 
-    def get_block(self):
-        return self.__block
+    # def get_block(self):
+    #     return self.__block
 
     def stop(self):
         self.__stop_event.set()
@@ -28,6 +34,8 @@ class MiningThread(threading.Thread):
         return self.__stop_event.is_set()
 
     def run(self):
+        self.__transactions = self.__model.unconfirmed_tx_pool[0:CHAIN_SIZE]
+        self.__prev_hash = self.__model.blockchain.get_head_of_chain().block.block_hash
         pow_found = False
         nonce = 0
         block = None
@@ -38,5 +46,7 @@ class MiningThread(threading.Thread):
             if block.hash_difficulty() == self.__diff:
                 pow_found = True
             nonce += 1
+
         if pow_found:
-            self.__block = block
+            self.__model.unconfirmed_tx_pool[0:CHAIN_SIZE] = []
+            self.__model.verify_block(block)

@@ -27,7 +27,8 @@ class Model:
     bft_context: BFTContext
     peers_database: List[PeerData]
 
-    def __init__(self, peer_data, sk, server_queue, broadcast_queue, peers_database, mode, bft_leader=False, mining_mode='pow'):
+    def __init__(self, peer_data, sk, server_queue, broadcast_queue, peers_database, mode, bft_leader=False,
+                 mining_mode='pow'):
         self.mining_mode = mining_mode
         self.peers_database = peers_database
         self.peer_data = peer_data
@@ -42,9 +43,9 @@ class Model:
             self.pk = serialization.load_pem_public_key(peer_data.pk, backend=default_backend())
             self.__wallet = []
         elif mode == 'miner':
-            self.__unconfirmed_tx_pool = []
-            self.__mining_thread = MiningThread()
-        self.__blockchain = None
+            self.unconfirmed_tx_pool = []
+            self.__mining_thread = None
+        self.blockchain = None
         self.mode = mode
         self.genesis_block()
 
@@ -82,7 +83,7 @@ class Model:
         if self.mode == 'client':
             self.__wallet.append(Transaction(outputs=[(self.peer_data.pk, BASE_VALUE)]).get_outputs()[0])
         genesis_block = Block(transactions=transactions, previous_hash="genesis", height=0)
-        self.__blockchain = Blockchain(block=genesis_block)
+        self.blockchain = Blockchain(block=genesis_block)
 
     # TODO: transaction generation mechanism
     # Client
@@ -117,7 +118,7 @@ class Model:
             if self.__mining_thread.is_alive():
                 self.__mining_thread.stop()
                 self.__mining_thread.join()
-                self.__unconfirmed_tx_pool.remove(block.transactions)
+                self.unconfirmed_tx_pool.remove(block.transactions)
         # Step #1
         # check the difficulty number of zeros in the block hash
         if self.mining_mode == 'pow':
@@ -126,19 +127,24 @@ class Model:
 
         # Step #2:
         # check the referenced previous block
-        return self.__blockchain.add_block(block)
+        result = self.blockchain.add_block(block)
+        # if result:
+        # TODO: broadcast block
 
     # Miner
     def add_transaction(self, tx):
         if self.validate_transaction(tx):
-            self.__unconfirmed_tx_pool.append(tx)
-        if len(self.__unconfirmed_tx_pool) >= CHAIN_SIZE and not self.is_mining():
-            self.__mining_thread.set_data(self.__unconfirmed_tx_pool[0: CHAIN_SIZE],
-                                          self.__blockchain.get_head_of_chain().block.block_hash, DIFFICULTY_LEVEL)
+            self.unconfirmed_tx_pool.append(tx)
+
+        if len(self.unconfirmed_tx_pool) >= CHAIN_SIZE and not self.is_mining():
+            self.__mining_thread = MiningThread(self)
             self.__mining_thread.start()
-            self.__mining_thread.join()     # TODO: don't wait for pow
-            self.__unconfirmed_tx_pool[0:CHAIN_SIZE] = []
-            self.verify_block(self.__mining_thread.get_block())
+        #     self.__mining_thread.set_data(self.unconfirmed_tx_pool[0: CHAIN_SIZE],
+        #                                   self.blockchain.get_head_of_chain().block.block_hash, DIFFICULTY_LEVEL)
+        #     self.__mining_thread.start()
+        #     self.__mining_thread.join()     # TODO: don't wait for pow
+        #     self.unconfirmed_tx_pool[0:CHAIN_SIZE] = []
+        #     self.verify_block(self.__mining_thread.get_block())
 
     # Miner
     def validate_transaction(self, tx):
@@ -166,7 +172,7 @@ class Model:
         # Step #3:
         # check double spending
         # TODO:Double spending Test
-        if self.__blockchain.get_block_of_transaction(hash_transaction(tx_original)) is not None:
+        if self.blockchain.get_block_of_transaction(hash_transaction(tx_original)) is not None:
             print("Double Spending rejected.")
             return False
         print("============ VALID ===============")
