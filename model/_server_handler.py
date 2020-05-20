@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING
 
+from chain.block import Block
 from transaction.transaction import Transaction
 from util.message import bft
 from util.message.advertise_self_message import AdvertiseSelfMessage
@@ -23,7 +24,8 @@ class ServerHandler:
             bft.PrePrepareMessage: self.bft_pre_prepare_handler,
             bft.PrepareMessage: self.bft_prepare_handler,
             bft.CommitMessage: self.bft_commit_handler,
-            Transaction: self.transaction_handler
+            Transaction: self.transaction_handler,
+            Block: self.new_block_handler
         }
 
     def handle(self, message):
@@ -57,3 +59,12 @@ class ServerHandler:
             self.model.add_transaction(message)
         return SuccessResponse()
 
+    def new_block_handler(self, message: Block):
+        print(str(message))
+        if self.model.mode == 'miner':
+            self.model.verify_and_add_block(message)
+        if self.model.mode == 'client':
+            added = self.model.verify_and_add_block(message)
+            if added:
+                self.model.maybe_store_output(message)
+        return SuccessResponse()

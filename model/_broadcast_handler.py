@@ -1,5 +1,6 @@
 from typing import Dict, TYPE_CHECKING
 
+from chain.block import Block
 from model._bft.bft_state import PrePreparedState
 from transaction.transaction import Transaction
 from util.message import bft
@@ -24,7 +25,8 @@ class BroadcastHandler:
             bft.PrePrepareMessage: self.bft_pre_prepare_handler,
             bft.PrepareMessage: self.bft_prepare_handler,
             bft.CommitMessage: self.bft_commit_handler,
-            Transaction: self.new_transaction_handler
+            Transaction: self.new_transaction_handler,
+            Block: self.new_block_handler
         }
 
     def handle(self, message, responses):
@@ -53,4 +55,7 @@ class BroadcastHandler:
         pass
 
     def new_transaction_handler(self, responses: Dict[str, SuccessResponse]):
-        print("transaction responses:", responses)
+        pass
+
+    def new_block_handler(self, responses: Dict[str, SuccessResponse]):
+        pass

@@ -72,6 +72,10 @@ class Model:
         commit_event = BroadcastEvent(message)
         self.broadcast_queue.put(commit_event)
 
+    def broadcast_new_block(self, block: Block):
+        block_event = BroadcastEvent(block)
+        self.broadcast_queue.put(block_event)
+
     # TODO: Change the hardcoded pk with the actual models pk Test
     # Miner and Client
     def genesis_block(self):
@@ -109,27 +113,27 @@ class Model:
     def maybe_store_output(self, block):
         for tx in block.transactions():
             for op in tx.get_outputs():
-                if op.get_recipient_pk() == self.pk:
+                if op.get_recipient_pk() == self.peer_data.pk:
                     self.__wallet.append(op)
 
     # Miner and Client
-    def verify_block(self, block):
-        if self.mode == 'miner':
-            if self.__mining_thread.is_alive():
+    def verify_and_add_block(self, block):
+        if self.mode == 'miner' and self.mining_mode == 'pow':
+            if self.__mining_thread is not None and self.__mining_thread.is_alive():
                 self.__mining_thread.stop()
                 self.__mining_thread.join()
-                self.unconfirmed_tx_pool.remove(block.transactions)
-        # Step #1
-        # check the difficulty number of zeros in the block hash
-        if self.mining_mode == 'pow':
+                for tx in block.transactions:
+                    if tx in self.unconfirmed_tx_pool:
+                        self.unconfirmed_tx_pool.remove(tx)
+                print('=================================Stopping current block mining')
+            # Step #1
+            # check the difficulty number of zeros in the block hash
             if block.hash_difficulty() != DIFFICULTY_LEVEL:
                 return False
-
         # Step #2:
         # check the referenced previous block
         result = self.blockchain.add_block(block)
-        # if result:
-        # TODO: broadcast block
+        return result
 
     # Miner
     def add_transaction(self, tx):

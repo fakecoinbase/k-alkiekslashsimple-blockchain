@@ -63,3 +63,6 @@ class Transaction:
 
     def get_peer_data(self):
         return self.__peer_data
+
+    def __eq__(self, other):
+        return self.__signature == other.__signature

@@ -18,6 +18,8 @@ peers:
         type: client
         key-pair-id: 2
 
+      - port: 8184
+        type: miner
 #  - hostname: 'merit'
 #    ip: 41.47.158.26
 #    peers:
