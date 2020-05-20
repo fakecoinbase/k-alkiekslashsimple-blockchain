@@ -134,10 +134,10 @@ class Block:
 
     def __str__(self):
         s = "Time stamp: " + str(self._time_stamp) + "\n"
-        s = "Block Hash: " + str(self.block_hash()) + "\nBlockNo: " + str(self.block_height) + "\nBlock Data: \n"
-        for tx in self.transactions:
-            s += str(tx.to_dict()) + "\n"
+        s = "Block Hash: " + str(self.block_hash) + "\nBlockNo: " + str(self.block_height) + "\nBlock Data: \n"
+        # for tx in self.transactions:
+        #     s += str(tx.to_dict()) + "\n"
         s += "Hashes: " + str(
-            self.nonce) + "\n prevHash: " + self._previous_hash + "\n Merkle root: " + self.merkle_root \
+            self._nonce) + "\n prevHash: " + self._previous_hash + "\n Merkle root: " + self.merkle_root \
              + "\n--------------"
         return s

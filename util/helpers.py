@@ -7,7 +7,7 @@ from cryptography.hazmat.primitives import hashes, serialization
 
 SIZE_NUM_BYTES = 4
 
-CHAIN_SIZE = 20
+CHAIN_SIZE = 200
 DIFFICULTY_LEVEL = 3
 BASE_VALUE = 50
 

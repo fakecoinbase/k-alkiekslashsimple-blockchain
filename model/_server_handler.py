@@ -53,9 +53,7 @@ class ServerHandler:
         return SuccessResponse()
 
     def transaction_handler(self, message: Transaction):
-        print(message)
         if self.model.mode == 'miner':
-            # print(message.to_dict())
             self.model.add_transaction(message)
         return SuccessResponse()
 

@@ -49,4 +49,6 @@ class MiningThread(threading.Thread):
 
         if pow_found:
             self.__model.unconfirmed_tx_pool[0:CHAIN_SIZE] = []
-            self.__model.verify_block(block)
+            self.__model.blockchain.add_block(block)
+            # TODO: broadcast new block
+            # self.__model.verify_block(block)

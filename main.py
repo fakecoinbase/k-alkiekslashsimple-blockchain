@@ -127,5 +127,7 @@ if __name__ == '__main__':
     #         break
 
     while True:
-        print('yay')
-        sleep(5)
+        sleep(3600)
+    # while True:
+    #     print('yay')
+    #     sleep(5)

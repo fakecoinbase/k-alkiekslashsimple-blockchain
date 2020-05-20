@@ -8,7 +8,7 @@ class Blockchain():
     each node contain block
     depth
     """
-    block_chain = []
+
     # TODO set configration for each block
     # MAX_SIZE = 0  # to be set
     # DIFFICULTY = 0
@@ -16,6 +16,8 @@ class Blockchain():
     # TODO don't forget to set height
     def __init__(self, block):
         self._block = block
+        self.block_chain = []
+        self.idx = 0
 
     @property
     def block(self):
@@ -31,10 +33,12 @@ class Blockchain():
         * The proof used to mine this block
         * The hash of the previous block
         """
+
         if self._block.block_hash == block.previous_hash:
             new_chain = Blockchain(block)
             new_chain.block.block_height = self.block.block_height + 1
             self.block_chain.append(new_chain)
+            print(str(block))
 
             return True
         for child in self.block_chain:

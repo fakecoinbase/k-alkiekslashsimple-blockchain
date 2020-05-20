@@ -15,7 +15,7 @@ class ServerDispatcher(threading.Thread):
         while True:
             event = self.queue.get()
             with event.condition:
-                print('Received ', type(event.message).__name__)
+                # print('Received ', type(event.message).__name__)
                 message = event.message
                 response = self.model.handle_server_message(message)
                 event.response = response

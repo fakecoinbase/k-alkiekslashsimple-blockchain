@@ -19,7 +19,7 @@ class ConnectionThread(threading.Thread):
 
     def run(self):
         try:
-            print('connection from', self.client_address)
+            # print('connection from', self.client_address)
             # Receive message
             req = recv_bytes(self.connection)
             request = pickle.loads(req)

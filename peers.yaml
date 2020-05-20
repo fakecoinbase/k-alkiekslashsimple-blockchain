@@ -8,11 +8,11 @@ peers:
 
       - port: 8181
         type: client
-        key-pair-id: 1
+        key-pair-id: 0
 
       - port: 8182
         type: client
-        key-pair-id: 2
+        key-pair-id: 1
 
       - port: 8183
         type: client

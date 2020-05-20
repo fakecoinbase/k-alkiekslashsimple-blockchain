@@ -136,7 +136,7 @@ class Model:
         if self.validate_transaction(tx):
             self.unconfirmed_tx_pool.append(tx)
 
-        if len(self.unconfirmed_tx_pool) >= CHAIN_SIZE and not self.is_mining():
+        if len(self.unconfirmed_tx_pool) >= CHAIN_SIZE and (self.__mining_thread is None or not self.is_mining()):
             self.__mining_thread = MiningThread(self)
             self.__mining_thread.start()
         #     self.__mining_thread.set_data(self.unconfirmed_tx_pool[0: CHAIN_SIZE],
@@ -175,7 +175,6 @@ class Model:
         if self.blockchain.get_block_of_transaction(hash_transaction(tx_original)) is not None:
             print("Double Spending rejected.")
             return False
-        print("============ VALID ===============")
         return True
 
     # Miner
