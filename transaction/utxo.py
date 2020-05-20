@@ -28,7 +28,8 @@ class Utxo:
         return collections.OrderedDict({
             'tx_hash': self.__tx_hash,
             'index': self.__idx,
-            'value': self.__value
+            'value': self.__value,
+            'recipient_pk': self.__payee_pk
         })
 
     def to_dict(self):
