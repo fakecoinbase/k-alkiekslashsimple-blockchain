@@ -28,6 +28,7 @@ class TransactionGenerator(threading.Thread):
 
     def generate_random_tx(self):
         input_utxo = self.model.get_random_input()
+        # self.model.get_wallet().remove(input_utxo)
         value = input_utxo.get_value()
 
         n_outputs = 2
