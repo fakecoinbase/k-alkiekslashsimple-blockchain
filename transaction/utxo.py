@@ -5,9 +5,10 @@ from util.helpers import hash_transaction, verify_signature, sign
 
 class Utxo:
 
+    # When generating a new output
     def __init__(self, tx, op_index):
         self.__payee_pk = tx.destinations[op_index - 1][0]
-        self.__tx_hash = hash_transaction(tx)
+        self.__tx_hash = None
         self.__idx = op_index
         self.__value = tx.destinations[op_index - 1][1]
         self.__signature = b''
@@ -24,13 +25,16 @@ class Utxo:
     def get_index(self):
         return self.__idx
 
+    # output dictionary
     def __to_dict(self):
         return collections.OrderedDict({
-            'tx_hash': self.__tx_hash,
             'index': self.__idx,
             'value': self.__value,
             'recipient_pk': self.__payee_pk
         })
+
+    def set_prev_tx_hash(self, tx):
+        self.__tx_hash = hash_transaction(tx)
 
     def to_dict(self):
         return self.__to_dict()

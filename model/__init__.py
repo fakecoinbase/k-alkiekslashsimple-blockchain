@@ -44,9 +44,12 @@ class Model:
         elif mode == 'miner':
             self.unconfirmed_tx_pool = []
             self.__mining_thread = None
+            self.__inputs_set = set()
         self.blockchain = None
         self.mode = mode
         self.genesis_block()
+        if mode == 'client':
+            print(self.__wallet[0].to_dict())
 
     def handle_broadcast_responses(self, message, responses):
         return self.broadcast_handler.handle(message, responses)
@@ -79,12 +82,23 @@ class Model:
     # Miner and Client
     def genesis_block(self):
         transactions = []
+        my_trans = []
         for peer in self.peers_database:
             if peer.pk is not None:
-                transactions.append(Transaction(outputs=[(peer.pk, BASE_VALUE)], timestamp=0))
+                for count in range(CHAIN_SIZE//2):
+                    if peer.pk == self.peer_data.pk:
+                        trans = Transaction(outputs=[(peer.pk, BASE_VALUE)], timestamp=count)
+                        my_trans.append(trans)
+                        transactions.append(trans)
+                    else:
+                        transactions.append(Transaction(outputs=[(peer.pk, BASE_VALUE)], timestamp=count))
 
         if self.mode == 'client':
-            self.__wallet.append(Transaction(outputs=[(self.peer_data.pk, BASE_VALUE)]).get_outputs()[0])
+            for tx in my_trans:
+                input_utxo = tx.get_outputs()[0]
+                input_utxo.set_prev_tx_hash(tx)
+                input_utxo.sign(self.sk)
+                self.__wallet.append(input_utxo)
         genesis_block = Block(transactions=transactions, previous_hash="genesis", height=0, timestamp=0)
         self.blockchain = Blockchain(block=genesis_block)
 
@@ -113,6 +127,7 @@ class Model:
         for tx in block.transactions:
             for op in tx.get_outputs():
                 if op.get_recipient_pk() == self.peer_data.pk:
+                    op.set_prev_tx_hash(tx)
                     self.__wallet.append(op)
                     print("--- got a utxo in my wallet 😎😎 ---")
 
@@ -140,6 +155,7 @@ class Model:
     def add_transaction(self, tx):
         if self.validate_transaction(tx):
             self.unconfirmed_tx_pool.append(tx)
+            self.__inputs_set.add((tx.get_inputs()[0].get_transaction_hash(), tx.get_inputs()[0].get_index()))
 
         if self.mining_mode == 'pow':
             if len(self.unconfirmed_tx_pool) >= CHAIN_SIZE and (self.__mining_thread is None or not self.is_mining()):
@@ -177,6 +193,16 @@ class Model:
             if not ip.verify():
                 print("Invalid input.")
                 return False
+
+            if (ip.get_transaction_hash(), ip.get_index()) in self.__inputs_set:
+                print("Double Spending rejected.")
+                return False
+            # if self.blockchain.get_block_of_transaction(ip.get_transaction_hash()) is not None:
+            #
+            # if ip.get_transaction_hash() in [hash_transaction(trans) for trans in self.unconfirmed_tx_pool]:
+            #     print("Double Spending rejected.")
+            #     return False
+
         # Step #2:
         # check overspending
         transferred_value = 0
@@ -189,9 +215,6 @@ class Model:
         # Step #3:
         # check double spending
         # TODO:Double spending Test
-        if self.blockchain.get_block_of_transaction(hash_transaction(tx_original)) is not None:
-            print("Double Spending rejected.")
-            return False
         return True
 
     # Miner
