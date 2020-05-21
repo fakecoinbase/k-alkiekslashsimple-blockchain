@@ -7,9 +7,13 @@ from cryptography.hazmat.primitives import hashes, serialization
 
 SIZE_NUM_BYTES = 4
 
-CHAIN_SIZE = 10
+CHAIN_SIZE = 200
 DIFFICULTY_LEVEL = 3
 BASE_VALUE = 2
+
+CLIENT_SLEEP_TIME = 0.25
+P_DOUBLE_SPEND = 0.1
+
 
 def send_bytes(sock: socket, payload: bytes):
     size_bytes = len(payload).to_bytes(SIZE_NUM_BYTES, byteorder='big')
