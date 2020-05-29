@@ -18,6 +18,6 @@ Implementation of a simple blockchain in python made as the final project of the
  
 Example for running a miner and client with a proof of work consensus:
    ```
-   $ python main.py miner -p 9980 -c pow
-   $ python main.py client -p 9980 -c pow
+   $ python main.py -p 9980 -c pow
+   $ python main.py -p 9980 -c pow
    ```
